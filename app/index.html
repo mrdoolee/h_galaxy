@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <meta name="theme-color" content="#05070f">
+  <title>별을 세어 은하를 그리다</title>
+  <link rel="stylesheet" href="./css/style.css">
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "./vendor/three/three.module.min.js",
+      "three/addons/": "./vendor/three/addons/"
+    }
+  }
+  </script>
+</head>
+<body>
+  <main id="app">
+    <section id="view">
+      <canvas id="c"></canvas>
+      <div id="reticle" hidden></div>
+      <p id="hint"></p>
+      <p id="status" hidden></p>
+      <div id="actions">
+        <button id="aim-btn" class="primary" hidden></button>
+        <button id="phase-btn" class="primary" hidden></button>
+        <button id="skip-btn" hidden></button>
+      </div>
+      <div id="toggles" hidden>
+        <label><input type="checkbox" id="tg-stars"> <span data-text="toggleStars"></span></label>
+        <label><input type="checkbox" id="tg-surface" checked> <span data-text="toggleSurface"></span></label>
+        <label><input type="checkbox" id="tg-markers" checked> <span data-text="toggleMarkers"></span></label>
+      </div>
+      <div id="eyepiece" hidden>
+        <div class="ep-body">
+          <canvas id="ep-canvas"></canvas>
+          <div class="ep-side">
+            <p id="ep-title"></p>
+            <p id="ep-count" class="big"></p>
+            <p id="ep-msg"></p>
+            <button id="ep-auto" class="primary" hidden></button>
+            <div id="ep-depth" hidden></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <aside id="panel">
+      <header>
+        <h1 data-text="title"></h1>
+        <button id="restart-btn" class="small" data-text="restart"></button>
+      </header>
+      <nav id="tabs">
+        <button data-tab="record" class="active" data-text="tabRecord"></button>
+        <button data-tab="map" data-text="tabMap"></button>
+        <button data-tab="questions" data-text="tabQuestions" hidden></button>
+      </nav>
+      <div id="tab-record" class="tab active">
+        <table id="record">
+          <thead><tr><th data-text="colDirection"></th><th data-text="colCount"></th><th data-text="colDepth"></th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <p id="progress"></p>
+      </div>
+      <div id="tab-map" class="tab">
+        <canvas id="map"></canvas>
+      </div>
+      <div id="tab-questions" class="tab">
+        <p id="q-group"></p>
+        <p id="q-num"></p>
+        <p id="q-text"></p>
+        <div class="q-nav"><button id="q-prev"></button><button id="q-next"></button></div>
+      </div>
+    </aside>
+  </main>
+
+  <div id="intro" class="overlay">
+    <div class="card">
+      <p class="sub" data-text="subtitle"></p>
+      <h2 data-text="title"></h2>
+      <p class="question" data-text="question"></p>
+      <div class="cols">
+        <div><h3 data-text="rulesTitle"></h3><ul id="intro-rules"></ul></div>
+        <div><h3 data-text="assumptionsTitle"></h3><ul id="intro-assumptions"></ul></div>
+      </div>
+      <p class="note" data-text="sunNote"></p>
+      <button id="start-btn" class="primary big" data-text="start"></button>
+    </div>
+  </div>
+
+  <div id="rotate" class="overlay"><p>📱↻ <span data-text="rotateDevice"></span></p></div>
+
+  <script type="module" src="./js/app.js"></script>
+</body>
+</html>

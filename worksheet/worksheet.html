@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>별을 세어 은하를 그리다 — 활동지</title>
+<style>
+  @page { size: A4; margin: 12mm; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: "Malgun Gothic", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+    color: #111;
+    font-size: 11pt;
+  }
+  .page { width: 186mm; min-height: 270mm; page-break-after: always; }
+  .page:last-child { page-break-after: auto; }
+  header { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid #222; padding-bottom: 2mm; }
+  h1 { font-size: 18pt; margin: 0; }
+  .sub { font-size: 9.5pt; color: #444; }
+  .who { font-size: 10pt; white-space: nowrap; }
+  .who span { display: inline-block; border-bottom: 1px solid #444; width: 22mm; margin: 0 2mm 0 1mm; }
+  .q { margin: 4mm 0 3mm; padding: 2.5mm 4mm; background: #f3f3f3; border-left: 4px solid #e08a1e; font-weight: 700; }
+  h2 { font-size: 12.5pt; margin: 4mm 0 2mm; }
+  .row { display: flex; gap: 6mm; align-items: flex-start; }
+  table { border-collapse: collapse; }
+  th, td { border: 1px solid #555; text-align: center; }
+  #rec { width: 62mm; }
+  #rec th { background: #eee; font-size: 10pt; padding: 1.2mm; }
+  #rec td { height: 8.6mm; font-size: 10.5pt; }
+  #rec td:first-child { width: 16mm; font-weight: 700; }
+  #conv { width: 62mm; margin-top: 4mm; }
+  #conv th, #conv td { padding: 1mm; font-size: 10pt; }
+  #conv th { background: #eee; }
+  .help { font-size: 9pt; color: #333; line-height: 1.45; margin: 2mm 0 0; }
+  .tmpl { flex: 1; text-align: center; }
+  .tmpl svg { width: 112mm; height: 112mm; }
+  .tmpl p { font-size: 9.5pt; margin: 1mm 0; text-align: left; line-height: 1.45; }
+  ol.qs { padding-left: 0; list-style: none; margin: 0; counter-reset: q; }
+  ol.qs li { margin-bottom: 4.5mm; counter-increment: q; }
+  ol.qs .t { font-weight: 700; }
+  ol.qs .t::before { content: counter(q) ". "; }
+  .grp { font-size: 10pt; color: #b5650d; font-weight: 700; margin: 3mm 0 1mm; }
+  .lines { margin-top: 1.5mm; }
+  .lines div { border-bottom: 1px solid #999; height: 8mm; }
+  .box { border: 1px solid #999; height: 30mm; margin-top: 1.5mm; border-radius: 2mm; }
+</style>
+</head>
+<body>
+
+<section class="page">
+  <header>
+    <div>
+      <div class="sub">허셜의 별 계수법 재현하기 · 중학 과학 '우리은하'</div>
+      <h1>별을 세어 은하를 그리다</h1>
+    </div>
+    <div class="who">학년 반<span></span>번호<span style="width:12mm"></span>이름<span></span></div>
+  </header>
+
+  <div class="q">탐구 문제: 우리은하 밖으로 나가지 않고 은하의 모양을 알아낼 수 있을까?</div>
+
+  <div class="row">
+    <div>
+      <h2>① 관측 기록표</h2>
+      <table id="rec">
+        <thead><tr><th>방향</th><th>별의 수(개)</th><th>깊이(단위)</th></tr></thead>
+        <tbody id="rec-body"></tbody>
+      </table>
+
+      <table id="conv">
+        <thead><tr><th colspan="5">환산표 (별의 수 → 깊이)</th></tr></thead>
+        <tbody>
+          <tr><th>별의 수</th><td>1개</td><td>8개</td><td>27개</td><td>64개</td></tr>
+          <tr><th>깊이</th><td>1단위</td><td>2단위</td><td>3단위</td><td>4단위</td></tr>
+          <tr><th>별의 수</th><td colspan="4">125개 → 5단위</td></tr>
+        </tbody>
+      </table>
+      <p class="help">허셜의 가정: 별은 공간에 고르게 퍼져 있고, 망원경으로 은하 끝까지 볼 수 있다. 그래서 같은 시야에서 별이 많이 보이는 방향일수록 은하가 더 깊이 이어진다.</p>
+    </div>
+
+    <div class="tmpl">
+      <h2>② 은하의 단면 그리기</h2>
+      <svg id="polar" viewBox="-252 -240 504 480" xmlns="http://www.w3.org/2000/svg"></svg>
+      <p>• 가운데 ☉가 태양(관측자)이에요. 각 방향의 선 위에 <b>깊이만큼</b> 점을 찍고, 12개의 점을 차례로 이어 보세요.</p>
+      <p>• 가로선(0°–180°)은 은하의 기준면, 세로선(90°–270°)은 기준면에 수직인 방향이에요.</p>
+    </div>
+  </div>
+</section>
+
+<section class="page">
+  <header>
+    <div>
+      <div class="sub">별을 세어 은하를 그리다</div>
+      <h1>③ 결과 해석하기</h1>
+    </div>
+    <div class="who">이름<span></span></div>
+  </header>
+  <ol class="qs" id="qs"></ol>
+</section>
+
+<script>
+  // 관측 기록표 12줄
+  const dirs = [0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330];
+  document.getElementById('rec-body').innerHTML =
+    dirs.map(d => `<tr><td>${d}°</td><td></td><td></td></tr>`).join('');
+
+  // 단면 템플릿: 0° 오른쪽, 반시계 방향, 90° 위 (시뮬레이터 지도와 같은 규칙)
+  const unit = 40, ns = 'http://www.w3.org/2000/svg';
+  const svg = document.getElementById('polar');
+  const el = (name, attrs, text) => {
+    const e = document.createElementNS(ns, name);
+    for (const k in attrs) e.setAttribute(k, attrs[k]);
+    if (text !== undefined) e.textContent = text;
+    svg.appendChild(e);
+    return e;
+  };
+  for (let r = 1; r <= 5; r++) {
+    el('circle', { cx: 0, cy: 0, r: r * unit, fill: 'none', stroke: '#9a9a9a', 'stroke-width': r === 5 ? 1.4 : 1, 'stroke-dasharray': r === 5 ? '' : '4 3' });
+    el('text', { x: r * unit - 5, y: 14, 'font-size': 12, fill: '#555', 'text-anchor': 'middle' }, r);
+  }
+  for (const d of dirs) {
+    const a = d * Math.PI / 180, x = Math.cos(a), y = -Math.sin(a);
+    const plane = d % 90 === 0;
+    el('line', { x1: 0, y1: 0, x2: x * 5 * unit, y2: y * 5 * unit, stroke: plane ? '#333' : '#8a8a8a', 'stroke-width': plane ? 1.6 : 1 });
+    el('text', { x: x * (5 * unit + 20), y: y * (5 * unit + 20) + 5, 'font-size': 15, 'font-weight': 700, 'text-anchor': 'middle', fill: '#111' }, `${d}°`);
+  }
+  el('circle', { cx: 0, cy: 0, r: 7, fill: '#f2b01e', stroke: '#8a5a00' });
+  el('text', { x: 0, y: -12, 'font-size': 12, 'text-anchor': 'middle', fill: '#8a5a00' }, '태양');
+  el('text', { x: -4.4 * unit, y: -6, 'font-size': 11, fill: '#333' }, '은하 기준면');
+
+  // 해석 질문 (시뮬레이터 config.js와 같은 질문)
+  const questions = [
+    ['관측 결과 분석', '별이 가장 많이 관측된 방향은 어디인가?', 2],
+    ['관측 결과 분석', '별이 가장 적게 관측된 방향은 어디인가?', 2],
+    ['관측 결과 분석', '별이 많이 관측된 방향과 적게 관측된 방향에는 어떤 차이가 있는가?', 2],
+    ['과학적 추론', '별이 많이 관측된 방향으로는 은하가 어떤 형태로 이어져 있다고 생각할 수 있는가?', 2],
+    ['과학적 추론', '관측한 결과를 바탕으로 우리은하의 단면을 그려 보자. (옆에서 본 모습을 간단히)', 'box'],
+    ['과학적 추론', '우리는 은하 밖으로 나가지 않았는데 어떻게 은하의 모양을 알아낼 수 있었을까?', 3],
+    ['과학의 본성', '허셜이 추론한 은하의 모양이 실제와 다를 수 있는 이유는 무엇일까?', 3],
+  ];
+  let lastGroup = '';
+  document.getElementById('qs').innerHTML = questions.map(([g, t, n]) => {
+    const head = g !== lastGroup ? `<div class="grp">${g}</div>` : '';
+    lastGroup = g;
+    const answer = n === 'box' ? '<div class="box"></div>'
+      : `<div class="lines">${'<div></div>'.repeat(n)}</div>`;
+    return `<li>${head}<div class="t">${t}</div>${answer}</li>`;
+  }).join('');
+</script>
+</body>
+</html>
