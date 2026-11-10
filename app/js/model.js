@@ -188,15 +188,32 @@ export function sweepDirections(n = 160) {
   return out.sort((a, b) => (b.upper - a.upper) || (off(a) - off(b)));
 }
 
-/** 측정한 (방향, 깊이)들을 은하 기준면 고도 구간별로 평균 낸 단면 모양. 표면은 측정값으로만 만든다. */
-export function profileFromSamples(samples, binDeg = 10) {
-  const bins = new Map();
-  for (const { dir, depth } of samples) {
-    const k = Math.min(Math.floor(elevationOf(dir) / binDeg), Math.ceil(90 / binDeg) - 1);
-    const b = bins.get(k) || { sum: 0, n: 0 };
-    b.sum += depth; b.n++;
-    bins.set(k, b);
+/**
+ * 측정한 (방향, 깊이)들로 하늘 전체의 깊이 격자를 만든다. 은하 표면은 이 격자로만 그린다.
+ * 각 격자점의 깊이 = 가장 가까운 측정 k개를 각도가 가까울수록 크게 쳐서 평균(역거리 가중).
+ * 회전 대칭 같은 모양 가정을 넣지 않는다 — 방향마다 잰 값이 그대로 표면이 된다.
+ * 격자: 위도 i = 0..latSteps(은하 좌표 +y에서 −y로), 경도 j = 0..lonSteps(이음매 점 중복). 번호 = i·(lonSteps+1) + j
+ */
+export function depthGrid(samples, latSteps = 24, lonSteps = 48, k = 6) {
+  const units = samples.map(({ dir, depth }) => {
+    const l = Math.hypot(dir.x, dir.y, dir.z);
+    return { x: dir.x / l, y: dir.y / l, z: dir.z / l, depth };
+  });
+  const dirs = [], depths = [];
+  for (let i = 0; i <= latSteps; i++) {
+    const th = (i / latSteps) * Math.PI;
+    for (let j = 0; j <= lonSteps; j++) {
+      const ph = (j / lonSteps) * 2 * Math.PI;
+      const d = { x: Math.sin(th) * Math.cos(ph), y: Math.cos(th), z: Math.sin(th) * Math.sin(ph) };
+      const nearest = units
+        .map(u => ({ a: Math.acos(Math.max(-1, Math.min(1, u.x * d.x + u.y * d.y + u.z * d.z))), depth: u.depth }))
+        .sort((p, q) => p.a - q.a)
+        .slice(0, k);
+      let wsum = 0, sum = 0;
+      for (const n of nearest) { const w = 1 / (n.a * n.a + 1e-4); wsum += w; sum += w * n.depth; }
+      dirs.push(d);
+      depths.push(sum / wsum);
+    }
   }
-  return [...bins.entries()].sort((a, b) => a[0] - b[0])
-    .map(([k, b]) => ({ elev: (k + 0.5) * binDeg, depth: b.sum / b.n }));
+  return { latSteps, lonSteps, dirs, depths };
 }

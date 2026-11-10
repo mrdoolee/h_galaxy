@@ -107,7 +107,7 @@ test('generateGalaxy is deterministic per seed', () => {
 
 // ---------- v2: 수평선 관측자, 원뿔 별 세기, 자동 확장 ----------
 import {
-  fieldBasis, angleDiffDeg, countStarsInCone, sweepDirections, profileFromSamples,
+  fieldBasis, angleDiffDeg, countStarsInCone, sweepDirections, depthGrid,
 } from '../app/js/model.js';
 import { GALAXY_SEED } from '../app/js/config.js';
 
@@ -167,18 +167,26 @@ test('sweepDirections: upper sky first, each half ordered away from the observin
   for (let i = firstLower + 1; i < dirs.length; i++) assert.ok(off(dirs[i]) >= off(dirs[i - 1]));
 });
 
-test('profileFromSamples averages depth per elevation band', () => {
-  const samples = [];
-  for (let e = -89; e <= 89; e += 1) {
-    for (const a of [0, 1, 2]) {
-      const c = Math.cos(e * Math.PI / 180), s = Math.sin(e * Math.PI / 180);
-      const dir = { x: c * Math.cos(a), y: s, z: c * Math.sin(a) };
-      samples.push({ dir, depth: depthAtElevation(e) });
-    }
-  }
-  const prof = profileFromSamples(samples, 10);
-  assert.equal(prof.length, 9);
-  assert.deepEqual(prof.map(p => p.elev), [5, 15, 25, 35, 45, 55, 65, 75, 85]);
-  for (const p of prof) assert.ok(Math.abs(p.depth - depthAtElevation(p.elev)) < 0.15, `band ${p.elev}`);
-  assert.deepEqual(profileFromSamples([], 10), []);
+test('depthGrid follows each measured direction without assuming symmetry', () => {
+  // 오른쪽(+x) 절반은 깊이 5, 왼쪽 절반은 깊이 2인 '한쪽으로 치우친' 측정값
+  const samples = sweepDirections(400).map(({ dir }) => ({ dir, depth: dir.x >= 0 ? 5 : 2 }));
+  const grid = depthGrid(samples, 12, 24);
+  assert.equal(grid.dirs.length, 13 * 25);
+  assert.equal(grid.depths.length, grid.dirs.length);
+  const near = v => {
+    let best = 0, bestDot = -2;
+    grid.dirs.forEach((d, i) => { const c = dot(d, v); if (c > bestDot) { bestDot = c; best = i; } });
+    return grid.depths[best];
+  };
+  assert.ok(Math.abs(near({ x: 1, y: 0, z: 0 }) - 5) < 0.2, 'right side stays deep');
+  assert.ok(Math.abs(near({ x: -1, y: 0, z: 0 }) - 2) < 0.2, 'left side stays shallow');
+  for (const d of grid.dirs) assert.ok(close(len(d), 1, 1e-9));
+});
+
+test('depthGrid reproduces a smooth measured shape', () => {
+  const samples = sweepDirections(300).map(({ dir }) => ({ dir, depth: depthAtElevation(elevationOf(dir)) }));
+  const grid = depthGrid(samples, 12, 24);
+  grid.dirs.forEach((d, i) => {
+    assert.ok(Math.abs(grid.depths[i] - depthAtElevation(elevationOf(d))) < 0.35, `node ${i}`);
+  });
 });

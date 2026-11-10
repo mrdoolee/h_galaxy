@@ -1,6 +1,6 @@
 // 단계 흐름: 도입 → 튜토리얼 → 언덕 관측(12방향, 지도에 깊이 찍기) → 단면 → 자동 확장 → 해석 문제
 import {
-  DIRECTIONS, generateGalaxy, countStarsInCone, sweepDirections, profileFromSamples,
+  DIRECTIONS, generateGalaxy, countStarsInCone, sweepDirections, depthGrid, dirFromAngle,
 } from './model.js';
 import { createScene } from './scene.js';
 import { openEyepiece, closeEyepiece } from './eyepiece.js';
@@ -116,6 +116,8 @@ async function observe(phi) {
 // ---------- ④ 단면 ----------
 async function startSection() {
   phase = 'section';
+  $('map-badge').textContent = TEXT.mapBadge;
+  show('map-badge', true);
   show('reticle', false);
   panel.setActive(null);
   panel.setHeading(null);
@@ -154,7 +156,9 @@ function startExpand() {
     while (i < dirs.length) addOne();
     statusEl.hidden = true;
     show('skip-btn', false);
-    scene.buildSurface(profileFromSamples(samples));
+    // 학생이 잰 12방향 + 자동으로 잰 방향들, 잰 값 그대로 표면을 만든다
+    const student = panel.records().map(r => ({ dir: dirFromAngle(r.phi), depth: r.depth }));
+    scene.buildSurface(depthGrid([...student, ...samples]));
     hint(TEXT.hintExpandDone);
     const btn = $('phase-btn');
     btn.textContent = TEXT.interpretButton;
@@ -192,7 +196,10 @@ function startInterpret() {
   show('toggles', true);
   panel.showQuiz();
 }
-$('tg-stars').addEventListener('change', e => scene.setStarsVisible(e.target.checked));
+$('tg-stars').addEventListener('change', e => {
+  scene.setStarsVisible(e.target.checked);
+  $('map-badge').textContent = e.target.checked ? TEXT.mapBadgeStars : TEXT.mapBadge;
+});
 $('tg-surface').addEventListener('change', e => scene.setSurfaceVisible(e.target.checked));
 $('tg-markers').addEventListener('change', e => scene.setMarkersVisible(e.target.checked));
 

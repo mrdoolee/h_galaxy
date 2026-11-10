@@ -70,19 +70,6 @@ const v3 = d => new THREE.Vector3(d.x, d.y, d.z);
 const worldDir = phiDeg => new THREE.Vector3(Math.cos(phiDeg * DEG), 0, -Math.sin(phiDeg * DEG));
 const norm360 = a => ((a % 360) + 360) % 360;
 
-/** 측정으로 얻은 단면 모양에서 고도 e(°)의 깊이(선형 보간, 양 끝은 가장 가까운 값) */
-function depthFromProfile(profile, e) {
-  const a = Math.abs(e);
-  if (a <= profile[0].elev) return profile[0].depth;
-  for (let i = 1; i < profile.length; i++) {
-    if (a <= profile[i].elev) {
-      const p = profile[i - 1], q = profile[i];
-      return p.depth + (q.depth - p.depth) * (a - p.elev) / (q.elev - p.elev);
-    }
-  }
-  return profile[profile.length - 1].depth;
-}
-
 // ---------- 전경: 언덕, 사람, 망원경 ----------
 function buildForeground() {
   const fg = new THREE.Scene();
@@ -425,30 +412,42 @@ export function createScene(canvas, galaxy) {
     setMarkersVisible(on) { markers.visible = on; },
     setSurfaceVisible(on) { if (surface) surface.visible = on; },
 
-    /** 측정으로 얻은 단면 모양(profileFromSamples 결과)을 은하 회전축 둘레로 돌린 표면(반투명) */
-    buildSurface(profile) {
-      if (surface || !profile.length) return;
-      const pts = [];
-      for (let e = -90; e <= 90; e += 3) {
-        const d = depthFromProfile(profile, e);
-        pts.push(new THREE.Vector2(Math.max(1e-4, d * Math.cos(e * DEG)), d * Math.sin(e * DEG)));
+    /**
+     * 측정으로 얻은 깊이 격자(model.depthGrid 결과)로 은하 표면(반투명)을 만든다.
+     * 방향마다 잰 깊이를 그대로 이으므로 들쭉날쭉함이 남는다(모양 가정 없음).
+     */
+    buildSurface(grid) {
+      if (surface || !grid.depths.length) return;
+      const { latSteps, lonSteps, dirs, depths } = grid;
+      const cols = lonSteps + 1;
+      const pos = new Float32Array(dirs.length * 3);
+      dirs.forEach((d, i) => pos.set([d.x * depths[i], d.y * depths[i], d.z * depths[i]], i * 3));
+      const index = [];
+      for (let i = 0; i < latSteps; i++) {
+        for (let j = 0; j < lonSteps; j++) {
+          const a = i * cols + j, b = a + 1, c = a + cols, d = c + 1;
+          index.push(a, c, b, b, c, d);
+        }
       }
-      surface = new THREE.Mesh(new THREE.LatheGeometry(pts, 72), new THREE.MeshBasicMaterial({
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+      geo.setIndex(index);
+      surface = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({
         color: COLOR_AUTO, transparent: true, opacity: 0, side: THREE.DoubleSide, depthWrite: false,
       }));
       galaxyGroup.add(surface);
-      // 경선 12개 + 위선 5개만 그려 모양을 읽기 쉽게
+      // 경선 12개 + 위선 몇 개만 그려 모양을 읽기 쉽게
       const lineMat = new THREE.LineBasicMaterial({ color: COLOR_AUTO, transparent: true, opacity: 0.35 });
-      for (let k = 0; k < 12; k++) {
-        const a = (k / 12) * Math.PI * 2;
-        const line = pts.map(p => new THREE.Vector3(p.x * Math.sin(a), p.y, p.x * Math.cos(a)));
+      const P = i => new THREE.Vector3(pos[i * 3], pos[i * 3 + 1], pos[i * 3 + 2]);
+      for (let j = 0; j < lonSteps; j += lonSteps / 12) {
+        const line = [];
+        for (let i = 0; i <= latSteps; i++) line.push(P(i * cols + j));
         surface.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(line), lineMat));
       }
-      for (const e of [-60, -30, 0, 30, 60]) {
-        const d = depthFromProfile(profile, e);
-        const r = d * Math.cos(e * DEG), y = d * Math.sin(e * DEG);
-        const ring = circlePoints(r).map(p => new THREE.Vector3(p.x, y, p.y));
-        surface.add(new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(ring), lineMat));
+      for (let i = latSteps / 6; i < latSteps; i += latSteps / 6) {
+        const ring = [];
+        for (let j = 0; j <= lonSteps; j++) ring.push(P(i * cols + j));
+        surface.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(ring), lineMat));
       }
     },
   };
