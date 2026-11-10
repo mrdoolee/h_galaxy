@@ -5,15 +5,15 @@
 // 그러면 12방향은 관측자의 수평선 위(φ → (cosφ, 0, −sinφ))에 놓이고,
 // 은하 원반은 0°–180°를 품은 세로 면이 되어 은하수가 머리 위를 지나는 아치로 보인다.
 //
-// 관측 화면은 두 번 그린다: ① 하늘(원점 카메라: 별·라벨·땅 덮개) ② 전경(같은 회전의 3인칭 카메라: 언덕).
-// 사람과 망원경은 카메라와 함께 도는 그림(#observer, app.js가 시야 원에 맞춰 놓음)이다.
+// 관측 화면의 하늘은 원점 카메라로 그린다(별·은하수 빛·라벨·땅 덮개).
+// 하늘 바탕색(그러데이션)은 CSS(#view.observing), 언덕과 사람은 카메라와 함께 도는 그림(#ground, #observer)이다.
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { DIRECTIONS, FOV_HALF_ANGLE_DEG, dirFromAngle, angleDiffDeg } from './model.js';
 
 const DEG = Math.PI / 180;
 const CAMERA_FOV = 60;
-const SKY_PITCH = -2 * DEG;    // 수평선을 화면 가운데보다 조금 위에: 아래쪽에 관측자 그림이 들어갈 자리
+const SKY_PITCH = -4 * DEG;    // 수평선을 화면 가운데보다 조금 위에: 아래쪽에 관측자 그림이 들어갈 자리
 const GROUND_ELEV_DEG = -12;   // 이보다 낮은 하늘은 땅에 가린다(시야 원 반각 10°보다 아래)
 const LABEL_RADIUS = 1.4;
 const COLOR_STUDENT = 0xffb347;
@@ -71,35 +71,17 @@ const v3 = d => new THREE.Vector3(d.x, d.y, d.z);
 const worldDir = phiDeg => new THREE.Vector3(Math.cos(phiDeg * DEG), 0, -Math.sin(phiDeg * DEG));
 const norm360 = a => ((a % 360) + 360) % 360;
 
-// ---------- 전경: 언덕 (사람과 망원경은 그림 #observer로 화면에 겹친다) ----------
-function buildForeground() {
-  const fg = new THREE.Scene();
-  fg.add(new THREE.HemisphereLight(0x9fb0ff, 0x1a2a1c, 1.6));
-  const moon = new THREE.DirectionalLight(0xdfe6ff, 1.4);
-  moon.position.set(-3, 6, 4);
-  fg.add(moon);
-
-  const hill = new THREE.Mesh(
-    new THREE.SphereGeometry(30, 72, 36),
-    new THREE.MeshLambertMaterial({ color: 0x1f3626 }),
-  );
-  hill.position.set(0, -30, 0);
-  fg.add(hill);
-
-  return { fg };
-}
-
 export function createScene(canvas, galaxy) {
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
   renderer.autoClear = false;
 
   const sky = new THREE.Scene();
-  sky.background = new THREE.Color(0x02030a);
+  const SPACE = new THREE.Color(0x02030a); // 바깥 시점의 우주 바탕. 관측자 시점에서는 투명(CSS 하늘이 비침)
+  sky.background = null;
 
   const camera = new THREE.PerspectiveCamera(CAMERA_FOV, 1, 0.01, 200);
   camera.rotation.order = 'YXZ';
-  const fgCamera = new THREE.PerspectiveCamera(CAMERA_FOV, 1, 0.05, 200);
 
   const galaxyGroup = new THREE.Group();
   galaxyGroup.rotation.x = -Math.PI / 2; // 은하 좌표 → 세계 좌표
@@ -130,13 +112,33 @@ export function createScene(canvas, galaxy) {
   }));
   galaxyGroup.add(stars);
 
+  // 은하수 빛번짐: 은하 기준면(은하 좌표 xz)을 따라 크고 흐린 빛을 겹쳐 그려, 별 띠가 부드럽게 빛나 보이게 한다(관측자 시점만)
+  const glowPos = [], glowCol = [];
+  const grand = (() => { let a = 11; return () => ((a = (a * 16807) % 2147483647) / 2147483647); })();
+  for (let i = 0; i < 1600; i++) {
+    const t = grand() * Math.PI * 2;
+    const spread = (grand() + grand() + grand() - 1.5) * 0.55; // 기준면 가까이 몰리게
+    const r = 4;
+    glowPos.push(Math.cos(t) * r, spread * r * 0.35, Math.sin(t) * r);
+    const warm = grand();
+    glowCol.push(0.55 + 0.25 * warm, 0.5 + 0.15 * warm, 0.95 - 0.2 * warm);
+  }
+  const glowGeo = new THREE.BufferGeometry();
+  glowGeo.setAttribute('position', new THREE.Float32BufferAttribute(glowPos, 3));
+  glowGeo.setAttribute('color', new THREE.Float32BufferAttribute(glowCol, 3));
+  const milkyGlow = new THREE.Points(glowGeo, new THREE.PointsMaterial({
+    size: 46, sizeAttenuation: false, vertexColors: true, map: starSprite(),
+    transparent: true, opacity: 0.035, depthWrite: false, blending: THREE.AdditiveBlending,
+  }));
+  galaxyGroup.add(milkyGlow);
+
   // ---------- 관측자 시점 도우미: 수평선 위 12방향 라벨 ----------
   const sunHelpers = new THREE.Group();
   const labels = {};
   for (const phi of DIRECTIONS) {
     const s = textSprite(`${phi}°`);
     // 시야 원(반각 10°) 위쪽 바깥에 둔다: 은하 좌표 +z = 머리 위
-    s.position.copy(v3(dirFromAngle(phi)).multiplyScalar(LABEL_RADIUS)).add(new THREE.Vector3(0, 0, 0.42));
+    s.position.copy(v3(dirFromAngle(phi)).multiplyScalar(LABEL_RADIUS)).add(new THREE.Vector3(0, 0, 0.36));
     labels[phi] = s;
     sunHelpers.add(s);
   }
@@ -145,7 +147,7 @@ export function createScene(canvas, galaxy) {
   // 땅 덮개: 세계 고도 GROUND_ELEV_DEG 아래의 하늘을 가린다(관측자 시점만)
   const ground = new THREE.Mesh(
     new THREE.SphereGeometry(0.5, 48, 12, 0, Math.PI * 2, (90 - GROUND_ELEV_DEG) * DEG, (90 + GROUND_ELEV_DEG) * DEG),
-    new THREE.MeshBasicMaterial({ color: 0x0a120d, side: THREE.BackSide, depthTest: false, depthWrite: false }),
+    new THREE.MeshBasicMaterial({ color: 0x0b1420, side: THREE.BackSide, depthTest: false, depthWrite: false }),
   );
   ground.renderOrder = 5;
   sky.add(ground);
@@ -178,9 +180,6 @@ export function createScene(canvas, galaxy) {
   const rayMat = new THREE.LineBasicMaterial({ color: COLOR_STUDENT, transparent: true, opacity: 0.8 });
   let surface = null;
 
-  // ---------- 전경 ----------
-  const { fg } = buildForeground();
-  const FG_CAMERA_OFFSET = new THREE.Vector3(1.05, 2.15, 3.5); // 관측자 기준: 오른쪽 뒤 위
 
   // ---------- 카메라 조작 ----------
   const controls = new OrbitControls(camera, canvas);
@@ -201,9 +200,6 @@ export function createScene(canvas, galaxy) {
     camera.position.set(0, 0, 0);
     camera.rotation.set(SKY_PITCH, yaw, 0, 'YXZ');
     camera.updateMatrixWorld();
-    fgCamera.quaternion.copy(camera.quaternion);
-    fgCamera.position.copy(FG_CAMERA_OFFSET).applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw);
-    fgCamera.updateMatrixWorld();
   }
   const emitHeading = () => headingListeners.forEach(cb => cb(heading));
 
@@ -229,7 +225,8 @@ export function createScene(canvas, galaxy) {
     const w = canvas.clientWidth, h = canvas.clientHeight;
     if (!w || !h) return;
     renderer.setSize(w, h, false);
-    for (const cam of [camera, fgCamera]) { cam.aspect = w / h; cam.updateProjectionMatrix(); }
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
   }
   new ResizeObserver(resize).observe(canvas);
   resize();
@@ -244,10 +241,6 @@ export function createScene(canvas, galaxy) {
     if (surface && surface.material.opacity < 0.14) surface.material.opacity = Math.min(0.14, surface.material.opacity + dt * 0.15);
     renderer.clear();
     renderer.render(sky, camera);
-    if (mode === 'sun') {
-      renderer.clearDepth();
-      renderer.render(fg, fgCamera);
-    }
   });
 
   function stepTween(now) {
@@ -335,6 +328,8 @@ export function createScene(canvas, galaxy) {
       const observer = next === 'sun';
       sunHelpers.visible = observer;
       ground.visible = observer;
+      milkyGlow.visible = observer;
+      sky.background = observer ? null : SPACE;
       outsideHelpers.visible = !observer;
       if (observer) {
         controls.enabled = false;

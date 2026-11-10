@@ -435,7 +435,24 @@ async function missionPractice() {
     say(T().m4Right(count, answer));
     await waitNext();
   }
-  draw = () => {};
+  // 다음 활동 미리 보기: 언덕 위 관측자 둘레의 12방향
+  draw = ({ g, w, h }) => {
+    const cx = w / 2, cy = h / 2 + 8, R = Math.min(w, h) * 0.36;
+    g.strokeStyle = 'rgba(95,212,255,0.35)'; g.lineWidth = 1;
+    g.beginPath(); g.arc(cx, cy, R, 0, Math.PI * 2); g.stroke();
+    g.font = '12px sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+    for (let k = 0; k < 12; k++) {
+      const a = k * Math.PI / 6;
+      g.strokeStyle = 'rgba(255,211,77,0.55)';
+      g.beginPath(); g.moveTo(cx, cy); g.lineTo(cx + Math.cos(a) * R, cy - Math.sin(a) * R); g.stroke();
+      g.fillStyle = '#cfd8ff';
+      g.fillText(`${k * 30}°`, cx + Math.cos(a) * (R + 16), cy - Math.sin(a) * (R + 14));
+    }
+    g.fillStyle = '#ffd34d'; g.beginPath(); g.arc(cx, cy, 6, 0, Math.PI * 2); g.fill();
+    g.fillStyle = '#ffb347'; g.font = 'bold 15px sans-serif';
+    g.fillText(T().finalCompass, cx, 16);
+    g.textAlign = 'start'; g.textBaseline = 'alphabetic';
+  };
   redraw();
   say(T().finalText);
   await waitNext(T().startObserve);

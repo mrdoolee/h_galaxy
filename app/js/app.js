@@ -6,6 +6,7 @@ import { createScene } from './scene.js';
 import { openEyepiece, closeEyepiece } from './eyepiece.js';
 import { createPanel } from './panel.js';
 import { runTutorial } from './tutorial.js';
+import { createMeteors } from './meteors.js';
 import { TEXT, GALAXY_SEED } from './config.js';
 
 const $ = id => document.getElementById(id);
@@ -33,10 +34,10 @@ function later(fn, ms) {
 }
 
 // ---------- 시야 원(레티클)과 관측하는 사람 그림 ----------
-// 그림 속 망원경 끝(대물렌즈)의 위치와 망원경이 기운 각도. 그림을 바꾸면 이 값을 맞춘다.
-const OBSERVER_TIP = { x: 0.96, y: 0.06 };   // 그림 너비·높이에 대한 비율
-const OBSERVER_ASPECT = 640 / 708;           // 너비 / 높이
-const OBSERVER_TILT = 18 * Math.PI / 180;    // 망원경이 수평에서 올라간 각도
+// 그림 속 망원경 끝(대물렌즈)의 위치. 그림을 바꾸면 이 값을 맞춘다.
+const OBSERVER_TIP = { x: 0.61, y: 0.02 };   // 그림 너비·높이에 대한 비율
+const OBSERVER_ASPECT = 520 / 918;           // 너비 / 높이
+const meteors = createMeteors($('meteors'));
 
 function layoutReticle() {
   if (phase !== 'observe') return;
@@ -45,12 +46,9 @@ function layoutReticle() {
   el.style.left = `${x}px`;
   el.style.top = `${y}px`;
   el.style.width = el.style.height = `${2 * r}px`;
-  // 사람 그림: 망원경이 시야 원 가운데를 겨누도록, 시야 원 왼쪽 아래에 망원경 끝을 둔다
-  const d = r * 1.25;
-  const tipX = x - d * Math.cos(OBSERVER_TILT), tipY = y + d * Math.sin(OBSERVER_TILT);
-  // 화면 높이의 60%까지, 단 사람이 왼쪽 밖으로 잘리지 않을 만큼만 크게
-  const H = Math.min($('c').clientHeight * 0.6, tipX / (OBSERVER_TIP.x * OBSERVER_ASPECT));
-  const W = H * OBSERVER_ASPECT;
+  // 사람 그림: 화면 가운데 아래에서 등을 보이며, 앞쪽으로 뻗은 망원경 끝이 시야 원 아래쪽에 닿게 둔다
+  const tipX = x, tipY = y + r * 0.55;
+  const H = $('c').clientHeight * 0.6, W = H * OBSERVER_ASPECT;
   const img = $('observer');
   img.style.height = `${H}px`;
   img.style.width = `${W}px`;
@@ -80,6 +78,9 @@ function startObserve() {
   scene.setHeading(0, false);
   show('reticle', true);
   show('observer', true);
+  show('ground', true);
+  $('view').classList.add('observing');
+  meteors.start();
   layoutReticle();
   hint(TEXT.hintObserve);
   updateAim();
@@ -135,6 +136,9 @@ async function startSection() {
   phase = 'section';
   show('reticle', false);
   show('observer', false);
+  show('ground', false);
+  $('view').classList.remove('observing');
+  meteors.stop();
   panel.setActive(null);
   panel.setHeading(null);
   scene.showSection(panel.records());

@@ -178,9 +178,9 @@ export function createPanel({ onSelectDirection, onFinish }) {
       g.fillStyle = '#e8ecf6'; g.font = '13px sans-serif'; g.textBaseline = 'middle';
       g.fillText(TEXT.depthHintLayer(n * n), n * s + 14, h / 2);
     } else {
-      // 두 줄로 나눠 적는다(낮은 화면에서도 다 보이게)
-      g.fillStyle = '#e8ecf6'; g.font = '13px sans-serif'; g.textBaseline = 'top';
-      CONVERSION_TABLE.forEach((r, i) => g.fillText(TEXT.depthPair(r.depth, r.count), 4 + (i % 2) * (w / 2), 2 + Math.floor(i / 2) * 20));
+      // 한 줄에 하나씩(좁은 화면에서도 글자가 겹치지 않게)
+      g.fillStyle = '#e8ecf6'; g.font = '12.5px sans-serif'; g.textBaseline = 'top';
+      CONVERSION_TABLE.forEach((r, i) => g.fillText(TEXT.depthPair(r.depth, r.count), 4, 1 + i * 17.5));
     }
   }
 
@@ -291,14 +291,16 @@ function compareFigure() {
       <figcaption>${TEXT.compareHerschel}</figcaption>
     </figure>
     <figure>
-      <svg viewBox="0 0 220 92">
+      <svg viewBox="0 0 220 104">
         <ellipse cx="110" cy="45" rx="100" ry="6" fill="#5fd4ff" fill-opacity=".4"/>
         <ellipse cx="110" cy="45" rx="22" ry="14" fill="#9fe3ff" fill-opacity=".6"/>
         <circle cx="166" cy="45" r="5" fill="#ffd34d"/>
         <text x="166" y="30" fill="#ffd34d" font-size="14" text-anchor="middle">태양계</text>
-        <line x1="110" y1="58" x2="166" y2="58" stroke="#cfd8ff" stroke-width="1.2"/>
-        <text x="138" y="73" fill="#cfd8ff" font-size="13" text-anchor="middle">약 8500 pc</text>
-        <text x="110" y="89" fill="#94a0bd" font-size="13" text-anchor="middle">지름 약 30000 pc</text>
+        <line x1="110" y1="66" x2="166" y2="66" stroke="#cfd8ff" stroke-width="1.2"/>
+        <line x1="110" y1="61" x2="110" y2="71" stroke="#cfd8ff" stroke-width="1.2"/>
+        <line x1="166" y1="61" x2="166" y2="71" stroke="#cfd8ff" stroke-width="1.2"/>
+        <text x="138" y="82" fill="#cfd8ff" font-size="13" text-anchor="middle">약 8500 pc</text>
+        <text x="110" y="99" fill="#94a0bd" font-size="13" text-anchor="middle">지름 약 30000 pc</text>
       </svg>
       <figcaption>${TEXT.compareToday}</figcaption>
     </figure>

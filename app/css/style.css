@@ -19,6 +19,8 @@
 [hidden] { display: none !important; }
 
 html, body {
+  word-break: keep-all;      /* 한국어 줄바꿈을 낱말(띄어쓰기) 단위로 */
+  overflow-wrap: anywhere;   /* 아주 긴 낱말만 예외로 끊기 */
   margin: 0;
   height: 100%;
   background: var(--bg);
@@ -55,7 +57,24 @@ button:active { transform: scale(0.97); }
 }
 
 /* ---------- 3D 영역 ---------- */
-#view { position: relative; flex: 1; min-width: 0; overflow: hidden; }
+#view { position: relative; flex: 1; min-width: 0; overflow: hidden; background: #02030a; }
+/* 관측자 시점의 밤하늘: 위는 깊은 남색, 수평선 쪽은 보랏빛으로 은은하게 밝게 */
+#view.observing { background: linear-gradient(180deg, #050816 0%, #0b1234 38%, #1f2457 58%, #2c2a5e 66%, #121a33 82%, #0b1420 100%); }
+#ground { position: absolute; left: 0; width: 100%; bottom: 0; height: 34%; object-fit: cover; object-position: center top; pointer-events: none; z-index: 1; }
+#meteors { position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 0; }
+.meteor {
+  position: absolute; height: 2px; border-radius: 2px;
+  background: linear-gradient(90deg, rgba(255,255,255,0.95), rgba(190,210,255,0.5) 30%, rgba(190,210,255,0));
+  transform-origin: left center;
+  transform: rotate(var(--angle, -25deg));
+  filter: drop-shadow(0 0 4px rgba(200,220,255,0.9));
+  animation: meteor 1.2s ease-out forwards;
+}
+@keyframes meteor {
+  0% { opacity: 0; translate: 0 0; }
+  12% { opacity: 1; }
+  100% { opacity: 0; translate: var(--dx) var(--dy); }
+}
 #c { display: block; width: 100%; height: 100%; touch-action: none; }
 
 #reticle {
@@ -117,6 +136,7 @@ button:active { transform: scale(0.97); }
 #ep-title { color: var(--muted); font-size: 14px; }
 .big { font-size: clamp(20px, 3.4vw, 30px); font-weight: 800; color: var(--accent); }
 #ep-msg { font-size: 14px; line-height: 1.4; }
+#ep-done { white-space: nowrap; font-size: clamp(14px, 2vw, 17px); padding: 8px 12px; }
 #ep-auto { font-size: 18px; padding: 10px 14px; animation: glow 1s ease-in-out infinite alternate; }
 @keyframes glow { from { box-shadow: 0 0 0 0 rgba(255,159,46,0.0); } to { box-shadow: 0 0 0 6px rgba(255,159,46,0.35); } }
 
@@ -146,7 +166,7 @@ button:active { transform: scale(0.97); }
   border-radius: 10px;
 }
 #pick-hint-text { margin: 0 0 6px; font-size: 13px; line-height: 1.45; }
-#pick-hint-canvas { display: block; width: 100%; height: 88px; }
+#pick-hint-canvas { display: block; width: 100%; height: 92px; }
 
 /* ---------- 오른쪽 패널 ---------- */
 #panel {
@@ -257,7 +277,7 @@ button:active { transform: scale(0.97); }
   #record .rec b { font-size: 11px; }
   #pick-hint { padding: 6px 8px; }
   #pick-hint-text { font-size: 12px; }
-  #pick-hint-canvas { height: 74px; }
+  #pick-hint-canvas { height: 92px; }
   .tut { padding: 6px 10px; }
   .tut-side p { font-size: 13px; line-height: 1.4; }
   #tut-choices button, #tut-next { padding: 6px 10px; font-size: 14px; }
@@ -265,7 +285,7 @@ button:active { transform: scale(0.97); }
 }
 
 /* ---------- 관측하는 사람(그림) ---------- */
-#observer { position: absolute; pointer-events: none; user-select: none; z-index: 1; filter: drop-shadow(0 4px 10px rgba(0,0,0,0.5)); }
+#observer { position: absolute; pointer-events: none; user-select: none; z-index: 2; filter: drop-shadow(0 4px 10px rgba(0,0,0,0.5)); }
 
 /* ---------- 첫 화면·마지막 화면(동화책 그림) ---------- */
 .story-page { position: fixed; inset: 0; z-index: 10; overflow: hidden; background: #05070f; }
@@ -301,3 +321,7 @@ button:active { transform: scale(0.97); }
 @media (orientation: portrait) and (max-width: 900px) {
   #rotate { display: flex; z-index: 20; }
 }
+
+/* 짧은 제목·안내는 줄 길이를 고르게, 긴 설명은 마지막 줄에 한 낱말만 남지 않게 */
+h1, h2, h3, .story-title, .story-question, #tut-title, #hint, .q-text, #pick-banner { text-wrap: balance; }
+p, button, li, figcaption { text-wrap: pretty; }
