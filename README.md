@@ -33,4 +33,6 @@ node --test "tests/*.test.mjs"
 
 ## 라이선스 참고
 
-`app/vendor/three/`의 three.js(0.170.0)는 MIT 라이선스입니다(`app/vendor/three/LICENSE`).
+- `app/vendor/three/`의 three.js(0.170.0)는 MIT 라이선스입니다(`app/vendor/three/LICENSE`).
+- `app/fonts/`의 쥬아(Jua)와 고운돋움(Gowun Dodum)은 SIL Open Font License 1.1입니다(`app/fonts/OFL-*.txt`). 자주 쓰는 한글 2,350자와 영문만 남긴 부분 글꼴(woff2)입니다.
+- `app/img/`의 그림(첫 화면, 관측하는 사람, 마지막 화면)은 OpenAI 이미지 모델로 만든 그림입니다.

@@ -19,6 +19,7 @@
   <main id="app">
     <section id="view">
       <canvas id="c"></canvas>
+      <img id="observer" src="./img/observer.webp" alt="" hidden>
       <div id="reticle" hidden></div>
       <p id="hint"></p>
       <p id="status" hidden></p>
@@ -60,14 +61,28 @@
     </aside>
   </main>
 
-  <div id="intro" class="overlay">
-    <div class="card">
-      <p class="sub" data-text="subtitle"></p>
-      <h2 data-text="title"></h2>
-      <p class="question" data-text="question"></p>
-      <p class="note" data-text="introNote"></p>
-      <button id="start-btn" class="primary big" data-text="start"></button>
+  <!-- 첫 화면 -->
+  <div id="intro" class="story-page">
+    <img class="story-bg" src="./img/landing.webp" alt="">
+    <div class="story-text intro-text">
+      <p class="story-sub" data-text="subtitle"></p>
+      <h2 class="story-title" data-text="title"></h2>
+      <p class="story-question" data-text="question"></p>
+      <p class="story-note" data-text="introNote"></p>
+      <button id="start-btn" class="story-btn" data-text="start"></button>
     </div>
+    <p class="story-credit" data-text="credit"></p>
+  </div>
+
+  <!-- 마지막 화면(문제를 다 푼 뒤) -->
+  <div id="ending" class="story-page" hidden>
+    <img class="story-bg" src="./img/ending.webp" alt="">
+    <div class="story-text ending-text">
+      <h2 class="story-title" data-text="endingTitle"></h2>
+      <p class="story-question" data-text="endingSub"></p>
+      <button id="again-btn" class="story-btn" data-text="restartAll"></button>
+    </div>
+    <p class="story-credit" data-text="credit"></p>
   </div>
 
   <!-- 별을 다 세면 지도가 화면 가운데로 크게 나와 깊이를 찍는다 -->

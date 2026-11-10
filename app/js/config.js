@@ -13,6 +13,13 @@ export const TEXT = {
   question: '우리은하 밖으로 나가지 않고 은하의 모양을 알아낼 수 있을까?',
   introNote: '먼저 허셜이 어떻게 생각했는지 짧은 미션 4개로 알아본 뒤, 언덕 위에서 직접 별을 세어 볼 거예요.',
   start: '시작하기',
+  credit: '© 2026 Designed & Developed by 두리쌤(@trdoolee). All rights reserved.',
+
+  // 마지막 화면(문제를 다 푼 뒤)
+  toEnding: '마지막 이야기 ▶',
+  endingTitle: '이제 오늘날의 우리은하를 만나러 가 봅시다!',
+  endingSub: '수업에 집중해 주세요. 😊',
+  restartAll: '처음부터 다시 하기',
 
   // ---------- 튜토리얼 ----------
   tutorial: {

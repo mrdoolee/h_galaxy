@@ -7,7 +7,7 @@ import { drawCubeStack, drawLayerGrid, fitCubeSize } from './cubes.js';
 const $ = id => document.getElementById(id);
 const MIN_HIT_CSS_PX = 18;
 
-export function createPanel({ onSelectDirection }) {
+export function createPanel({ onSelectDirection, onFinish }) {
   // ---------- 기록표(12칸) ----------
   const grid = $('record');
   const cells = {};
@@ -197,8 +197,10 @@ export function createPanel({ onSelectDirection }) {
         root.innerHTML = `<p class="q-meta">${TEXT.quizDoneTitle}</p>
           <p class="q-score">${TEXT.quizScore(quiz.score, quiz.total)}</p>
           <p class="q-explain">${TEXT.quizDoneNote}</p>
-          <button class="primary" id="q-retry">${TEXT.quizRetry}</button>`;
+          <button class="primary" id="q-ending">${TEXT.toEnding}</button>
+          <button id="q-retry">${TEXT.quizRetry}</button>`;
         $('q-retry').onclick = () => { quiz = createQuiz(QUIZ); render(); };
+        $('q-ending').onclick = () => onFinish?.();
         return;
       }
       const q = quiz.current;

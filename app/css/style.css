@@ -1,3 +1,8 @@
+/* 글꼴: 쥬아(Jua), 고운돋움(Gowun Dodum) — SIL Open Font License 1.1 (app/fonts/OFL-*.txt).
+   자주 쓰는 한글 2,350자와 영문만 남긴 부분 글꼴이다. */
+@font-face { font-family: "Jua"; src: url("../fonts/Jua-Regular.woff2") format("woff2"); font-display: swap; }
+@font-face { font-family: "Gowun Dodum"; src: url("../fonts/GowunDodum-Regular.woff2") format("woff2"); font-display: swap; }
+
 :root {
   --bg: #05070f;
   --panel: #0e1424;
@@ -257,6 +262,39 @@ button:active { transform: scale(0.97); }
   .tut-side p { font-size: 13px; line-height: 1.4; }
   #tut-choices button, #tut-next { padding: 6px 10px; font-size: 14px; }
   .q-options button { padding: 6px 8px; font-size: 13px; }
+}
+
+/* ---------- 관측하는 사람(그림) ---------- */
+#observer { position: absolute; pointer-events: none; user-select: none; z-index: 1; filter: drop-shadow(0 4px 10px rgba(0,0,0,0.5)); }
+
+/* ---------- 첫 화면·마지막 화면(동화책 그림) ---------- */
+.story-page { position: fixed; inset: 0; z-index: 10; overflow: hidden; background: #05070f; }
+.story-bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.story-page::after { /* 글자가 잘 읽히도록 위아래를 살짝 어둡게 */
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(180deg, rgba(5,7,20,0.55) 0%, rgba(5,7,20,0.1) 45%, rgba(5,7,20,0) 70%, rgba(5,7,20,0.45) 100%);
+}
+.story-text { position: absolute; z-index: 1; display: flex; flex-direction: column; gap: 6px; word-break: keep-all; font-family: "Gowun Dodum", sans-serif; text-shadow: 0 2px 8px rgba(0,0,0,0.8); }
+.intro-text { right: 4%; top: 7%; width: min(60%, 620px); align-items: center; text-align: center; }
+.ending-text { left: 50%; top: 5%; transform: translateX(-50%); width: min(80%, 760px); align-items: center; text-align: center; }
+.story-sub { margin: 0; font-size: clamp(13px, 1.8vw, 17px); color: #e6dcff; }
+.story-title { margin: 0; font-family: "Jua", sans-serif; font-weight: 400; font-size: clamp(28px, 5vw, 56px); line-height: 1.15; color: #fff3c9; letter-spacing: 0.02em; }
+.story-question { margin: 2px 0; font-family: "Jua", sans-serif; font-size: clamp(16px, 2.6vw, 24px); color: #ffd27a; line-height: 1.35; }
+.story-note { margin: 0; font-size: clamp(13px, 1.7vw, 16px); line-height: 1.5; color: #f1f3ff; max-width: 34em; }
+.story-btn {
+  margin-top: 8px; font-family: "Jua", sans-serif; font-size: clamp(18px, 2.6vw, 24px);
+  padding: 10px 30px; border-radius: 999px; border: 0; color: #2a1606;
+  background: linear-gradient(180deg, #ffd27a, #ff9f2e); box-shadow: 0 6px 18px rgba(255,159,46,0.45);
+}
+.story-credit {
+  position: absolute; z-index: 1; left: 0; right: 0; bottom: 6px; margin: 0;
+  text-align: center; font-size: 11px; color: rgba(240,240,255,0.8); text-shadow: 0 1px 4px rgba(0,0,0,0.9);
+  font-family: "Gowun Dodum", sans-serif;
+}
+@media (max-height: 420px) {
+  .intro-text { top: 4%; gap: 3px; }
+  .story-note { font-size: 12px; line-height: 1.4; }
+  .story-btn { margin-top: 4px; padding: 7px 24px; }
 }
 
 #rotate { display: none; font-size: 20px; text-align: center; }

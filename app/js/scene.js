@@ -5,14 +5,15 @@
 // 그러면 12방향은 관측자의 수평선 위(φ → (cosφ, 0, −sinφ))에 놓이고,
 // 은하 원반은 0°–180°를 품은 세로 면이 되어 은하수가 머리 위를 지나는 아치로 보인다.
 //
-// 관측 화면은 두 번 그린다: ① 하늘(원점 카메라: 별·라벨·땅 덮개) ② 전경(같은 회전의 3인칭 카메라: 언덕·사람·망원경).
+// 관측 화면은 두 번 그린다: ① 하늘(원점 카메라: 별·라벨·땅 덮개) ② 전경(같은 회전의 3인칭 카메라: 언덕).
+// 사람과 망원경은 카메라와 함께 도는 그림(#observer, app.js가 시야 원에 맞춰 놓음)이다.
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { DIRECTIONS, FOV_HALF_ANGLE_DEG, dirFromAngle, angleDiffDeg } from './model.js';
 
 const DEG = Math.PI / 180;
 const CAMERA_FOV = 60;
-const SKY_PITCH = 6 * DEG;     // 하늘을 조금 더 보이게 살짝 올려다본다
+const SKY_PITCH = -2 * DEG;    // 수평선을 화면 가운데보다 조금 위에: 아래쪽에 관측자 그림이 들어갈 자리
 const GROUND_ELEV_DEG = -12;   // 이보다 낮은 하늘은 땅에 가린다(시야 원 반각 10°보다 아래)
 const LABEL_RADIUS = 1.4;
 const COLOR_STUDENT = 0xffb347;
@@ -70,7 +71,7 @@ const v3 = d => new THREE.Vector3(d.x, d.y, d.z);
 const worldDir = phiDeg => new THREE.Vector3(Math.cos(phiDeg * DEG), 0, -Math.sin(phiDeg * DEG));
 const norm360 = a => ((a % 360) + 360) % 360;
 
-// ---------- 전경: 언덕, 사람, 망원경 ----------
+// ---------- 전경: 언덕 (사람과 망원경은 그림 #observer로 화면에 겹친다) ----------
 function buildForeground() {
   const fg = new THREE.Scene();
   fg.add(new THREE.HemisphereLight(0x9fb0ff, 0x1a2a1c, 1.6));
@@ -85,63 +86,7 @@ function buildForeground() {
   hill.position.set(0, -30, 0);
   fg.add(hill);
 
-  // rig는 헤딩을 따라 돈다. rig 안에서 앞쪽은 −z.
-  const rig = new THREE.Group();
-  fg.add(rig);
-
-  const metal = new THREE.MeshLambertMaterial({ color: 0x8a90a0 });
-  const tubeMat = new THREE.MeshLambertMaterial({ color: 0xf0a640 });
-  // 삼각대
-  for (let k = 0; k < 3; k++) {
-    const a = (k / 3) * Math.PI * 2 + Math.PI / 6;
-    const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 1.45, 8), metal);
-    leg.position.set(Math.cos(a) * 0.22, 0.66, Math.sin(a) * 0.22);
-    leg.lookAt(0, 1.35, 0);
-    leg.rotateX(Math.PI / 2);
-    rig.add(leg);
-  }
-  // 망원경 통(수평, 앞쪽 −z)
-  const tube = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.085, 1.25, 20), tubeMat);
-  tube.rotation.x = Math.PI / 2;
-  tube.position.set(0, 1.4, -0.3);
-  rig.add(tube);
-  const lens = new THREE.Mesh(new THREE.CylinderGeometry(0.105, 0.105, 0.06, 20),
-    new THREE.MeshLambertMaterial({ color: 0x2b3550 }));
-  lens.rotation.x = Math.PI / 2;
-  lens.position.set(0, 1.4, -0.94);
-  rig.add(lens);
-  const eyepiece = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 0.18, 10), metal);
-  eyepiece.rotation.x = Math.PI / 2;
-  eyepiece.position.set(0, 1.4, 0.38);
-  rig.add(eyepiece);
-
-  // 사람(망원경 뒤에서 접안렌즈를 들여다봄)
-  const skin = new THREE.MeshLambertMaterial({ color: 0xe8c9a6 });
-  const coat = new THREE.MeshLambertMaterial({ color: 0x4f6fd8 });
-  const pants = new THREE.MeshLambertMaterial({ color: 0x27304a });
-  const person = new THREE.Group();
-  person.position.set(-0.05, 0, 0.75);
-  for (const x of [-0.11, 0.11]) {
-    const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.8, 10), pants);
-    leg.position.set(x, 0.4, 0);
-    person.add(leg);
-  }
-  const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.19, 0.42, 6, 14), coat);
-  body.position.set(0, 1.08, -0.05);
-  body.rotation.x = -0.25;
-  person.add(body);
-  const head = new THREE.Mesh(new THREE.SphereGeometry(0.15, 18, 14), skin);
-  head.position.set(0, 1.52, -0.28);
-  person.add(head);
-  for (const x of [-0.2, 0.2]) {
-    const arm = new THREE.Mesh(new THREE.CapsuleGeometry(0.05, 0.42, 4, 8), coat);
-    arm.position.set(x, 1.22, -0.32);
-    arm.rotation.x = -1.2;
-    person.add(arm);
-  }
-  rig.add(person);
-
-  return { fg, rig };
+  return { fg };
 }
 
 export function createScene(canvas, galaxy) {
@@ -234,8 +179,8 @@ export function createScene(canvas, galaxy) {
   let surface = null;
 
   // ---------- 전경 ----------
-  const { fg, rig } = buildForeground();
-  const FG_CAMERA_OFFSET = new THREE.Vector3(1.05, 2.15, 3.5); // rig 기준: 오른쪽 뒤 위
+  const { fg } = buildForeground();
+  const FG_CAMERA_OFFSET = new THREE.Vector3(1.05, 2.15, 3.5); // 관측자 기준: 오른쪽 뒤 위
 
   // ---------- 카메라 조작 ----------
   const controls = new OrbitControls(camera, canvas);
@@ -256,7 +201,6 @@ export function createScene(canvas, galaxy) {
     camera.position.set(0, 0, 0);
     camera.rotation.set(SKY_PITCH, yaw, 0, 'YXZ');
     camera.updateMatrixWorld();
-    rig.rotation.y = yaw;
     fgCamera.quaternion.copy(camera.quaternion);
     fgCamera.position.copy(FG_CAMERA_OFFSET).applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw);
     fgCamera.updateMatrixWorld();

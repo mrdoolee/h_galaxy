@@ -15,7 +15,7 @@ document.querySelectorAll('[data-text]').forEach(el => { el.textContent = TEXT[e
 
 const galaxy = generateGalaxy(GALAXY_SEED);
 const scene = createScene($('c'), galaxy);
-const panel = createPanel({ onSelectDirection: selectDirection });
+const panel = createPanel({ onSelectDirection: selectDirection, onFinish: showEnding });
 // 검증용: 주소 끝에 ?fast 를 붙이면 카메라 이동 애니메이션을 건너뛴다.
 if (new URLSearchParams(location.search).has('fast')) scene.setInstant(true);
 
@@ -32,7 +32,12 @@ function later(fn, ms) {
   timers.add(id);
 }
 
-// ---------- 시야 원(레티클): 지금 겨눈 수평선 방향 ----------
+// ---------- 시야 원(레티클)과 관측하는 사람 그림 ----------
+// 그림 속 망원경 끝(대물렌즈)의 위치와 망원경이 기운 각도. 그림을 바꾸면 이 값을 맞춘다.
+const OBSERVER_TIP = { x: 0.96, y: 0.06 };   // 그림 너비·높이에 대한 비율
+const OBSERVER_ASPECT = 640 / 708;           // 너비 / 높이
+const OBSERVER_TILT = 18 * Math.PI / 180;    // 망원경이 수평에서 올라간 각도
+
 function layoutReticle() {
   if (phase !== 'observe') return;
   const { x, y, r } = scene.fieldCircle();
@@ -40,6 +45,17 @@ function layoutReticle() {
   el.style.left = `${x}px`;
   el.style.top = `${y}px`;
   el.style.width = el.style.height = `${2 * r}px`;
+  // 사람 그림: 망원경이 시야 원 가운데를 겨누도록, 시야 원 왼쪽 아래에 망원경 끝을 둔다
+  const d = r * 1.25;
+  const tipX = x - d * Math.cos(OBSERVER_TILT), tipY = y + d * Math.sin(OBSERVER_TILT);
+  // 화면 높이의 60%까지, 단 사람이 왼쪽 밖으로 잘리지 않을 만큼만 크게
+  const H = Math.min($('c').clientHeight * 0.6, tipX / (OBSERVER_TIP.x * OBSERVER_ASPECT));
+  const W = H * OBSERVER_ASPECT;
+  const img = $('observer');
+  img.style.height = `${H}px`;
+  img.style.width = `${W}px`;
+  img.style.left = `${tipX - OBSERVER_TIP.x * W}px`;
+  img.style.top = `${tipY - OBSERVER_TIP.y * H}px`;
 }
 new ResizeObserver(layoutReticle).observe($('c'));
 
@@ -63,6 +79,7 @@ function startObserve() {
   scene.setMode('sun');
   scene.setHeading(0, false);
   show('reticle', true);
+  show('observer', true);
   layoutReticle();
   hint(TEXT.hintObserve);
   updateAim();
@@ -117,6 +134,7 @@ async function observe(phi) {
 async function startSection() {
   phase = 'section';
   show('reticle', false);
+  show('observer', false);
   panel.setActive(null);
   panel.setHeading(null);
   scene.showSection(panel.records());
@@ -197,6 +215,13 @@ function startInterpret() {
 $('tg-stars').addEventListener('change', e => scene.setStarsVisible(e.target.checked));
 $('tg-surface').addEventListener('change', e => scene.setSurfaceVisible(e.target.checked));
 $('tg-markers').addEventListener('change', e => scene.setMarkersVisible(e.target.checked));
+
+// ---------- 마지막 화면 ----------
+function showEnding() {
+  phase = 'ending';
+  show('ending', true);
+}
+$('again-btn').addEventListener('click', () => location.reload());
 
 // ---------- 처음부터 ----------
 $('restart-btn').addEventListener('click', () => {
