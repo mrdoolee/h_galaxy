@@ -116,8 +116,6 @@ async function observe(phi) {
 // ---------- ④ 단면 ----------
 async function startSection() {
   phase = 'section';
-  $('map-badge').textContent = TEXT.mapBadge;
-  show('map-badge', true);
   show('reticle', false);
   panel.setActive(null);
   panel.setHeading(null);
@@ -196,10 +194,7 @@ function startInterpret() {
   show('toggles', true);
   panel.showQuiz();
 }
-$('tg-stars').addEventListener('change', e => {
-  scene.setStarsVisible(e.target.checked);
-  $('map-badge').textContent = e.target.checked ? TEXT.mapBadgeStars : TEXT.mapBadge;
-});
+$('tg-stars').addEventListener('change', e => scene.setStarsVisible(e.target.checked));
 $('tg-surface').addEventListener('change', e => scene.setSurfaceVisible(e.target.checked));
 $('tg-markers').addEventListener('change', e => scene.setMarkersVisible(e.target.checked));
 

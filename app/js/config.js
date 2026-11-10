@@ -109,8 +109,6 @@ export const TEXT = {
   skip: '건너뛰기',
   expandCounter: (i, n, count, depth) => `방향 ${i}/${n} · 별 ${count}개 · 깊이 ${depth}단위`,
   hintExpandDone: '모든 방향에서 센 별로 깊이를 이어 은하 지도를 완성했어요. 허셜도 은하 밖에서 본 적은 없어요. 이렇게 별을 세어 모양을 추리했지요.',
-  mapBadge: '🗺️ 측정한 깊이를 이어 그린 지도예요. 은하 밖에서 실제로 본 모습이 아니에요.',
-  mapBadgeStars: '⭐ 지금 보이는 별은 허셜의 가정(별이 고르게 퍼져 있다)대로 만든 가상 은하예요. 실제 우리은하의 모습이 아니에요.',
   interpretButton: '결과 해석하기 ▶',
 
   hintInterpret: '지도를 손가락으로 돌리고 확대해 보며 오른쪽 문제를 풀어 보세요.',
