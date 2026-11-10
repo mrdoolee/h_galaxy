@@ -216,8 +216,45 @@ async function missionDepth() {
 }
 
 // ---------- 미션 2: 은하 끝 끌어 보기 ----------
+/** 망원경 시야가 뿔 모양인 까닭: 관측자 → 멀어질수록 넓어지는 시야, 거리 1·2에서의 시야 단면 */
+function drawConeIntro(g, w, h) {
+  const ex = 58, ey = h * 0.58;            // 접안렌즈(뿔의 꼭짓점)
+  const L = w - ex - 24, tan = Math.tan(13 * Math.PI / 180);
+  // 사람과 망원경
+  g.fillStyle = '#e8c9a6'; g.beginPath(); g.arc(ex - 26, ey - 22, 9, 0, Math.PI * 2); g.fill();
+  g.fillStyle = '#4f6fd8'; g.beginPath(); g.roundRect(ex - 36, ey - 12, 18, 40, 6); g.fill();
+  g.fillStyle = '#f0a640'; g.save(); g.translate(ex - 4, ey); g.fillRect(-14, -5, 34, 10); g.restore();
+  g.strokeStyle = '#8a90a0'; g.lineWidth = 2;
+  g.beginPath(); g.moveTo(ex, ey + 5); g.lineTo(ex - 8, ey + 42); g.moveTo(ex, ey + 5); g.lineTo(ex + 8, ey + 42); g.stroke();
+  // 시야(뿔)
+  const tip = ex + 16;
+  g.fillStyle = 'rgba(255,211,77,0.13)'; g.strokeStyle = 'rgba(255,211,77,0.75)'; g.lineWidth = 1.5;
+  g.beginPath(); g.moveTo(tip, ey); g.lineTo(tip + L, ey - L * tan); g.lineTo(tip + L, ey + L * tan); g.closePath(); g.fill(); g.stroke();
+  // 거리 1, 2에서의 시야 단면(원을 비스듬히 본 모습)
+  const marks = [{ k: 1, x: tip + L * 0.42 }, { k: 2, x: tip + L * 0.84 }];
+  g.font = '13px sans-serif'; g.textAlign = 'center';
+  for (const { k, x } of marks) {
+    const r = (x - tip) * tan;
+    g.fillStyle = 'rgba(255,179,71,0.28)'; g.strokeStyle = '#ffb347'; g.lineWidth = 2;
+    g.beginPath(); g.ellipse(x, ey, r * 0.38, r, 0, 0, Math.PI * 2); g.fill(); g.stroke();
+    g.fillStyle = '#ffb347';
+    g.fillText(T().coneDist(k), x, ey + r + 18);
+    g.fillStyle = '#cfd8ff';
+    g.fillText(T().coneWidth(k), x, ey - r - 10);
+  }
+  g.fillStyle = '#94a0bd';
+  g.fillText(T().coneEye, ex - 20, ey + 62);
+  g.textAlign = 'start';
+}
+
 async function missionCone() {
   header(2, T().m2Title);
+  // 먼저 망원경 시야가 왜 뿔 모양인지 그림으로
+  draw = ({ g, w, h }) => drawConeIntro(g, w, h);
+  redraw();
+  say(T().m2ConeIntro, T().m2ConeNote);
+  await waitNext();
+
   draw = ({ g, w, h }) => {
     g.fillStyle = '#cfd8ff'; g.font = 'bold 40px sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
     g.fillText('2배 → ?배', w / 2, h / 2);
