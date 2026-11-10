@@ -113,16 +113,30 @@ button:active { transform: scale(0.97); }
 .big { font-size: clamp(20px, 3.4vw, 30px); font-weight: 800; color: var(--accent); }
 #ep-msg { font-size: 14px; line-height: 1.4; }
 
-/* ---------- 깊이 힌트(관측 영역 왼쪽 위) ---------- */
+/* ---------- 깊이 찍기: 지도가 화면 가운데로 크게 ---------- */
+#pick-overlay {
+  position: fixed; inset: 0; z-index: 8;
+  background: rgba(3, 5, 12, 0.8);
+  display: flex; flex-direction: column; align-items: center;
+  padding: 8px 12px 10px; gap: 6px;
+}
+#pick-banner {
+  margin: 0; padding: 6px 18px;
+  background: #ff9f2e; color: #1b1203; font-weight: 800;
+  border-radius: 999px;
+  font-size: clamp(14px, 2.2vw, 18px);
+  animation: bob 0.9s ease-in-out infinite alternate;
+}
+@keyframes bob { from { transform: translateY(0); } to { transform: translateY(-3px); } }
+.pick-body { flex: 1; min-height: 0; width: 100%; display: flex; gap: 14px; align-items: center; justify-content: center; }
+#pick-slot { height: 100%; aspect-ratio: 1; max-width: 58vw; display: flex; align-items: center; justify-content: center; }
+#pick-slot #map { background: var(--panel); border-radius: 16px; box-shadow: 0 0 0 2px rgba(255, 211, 77, 0.35); }
 #pick-hint {
-  position: absolute; left: 8px; top: 48px;
-  width: clamp(200px, 34vw, 300px);
+  width: clamp(190px, 28vw, 300px);
   padding: 8px 10px;
-  background: rgba(14, 20, 36, 0.92);
+  background: var(--panel);
   border: 1px solid var(--accent);
   border-radius: 10px;
-  z-index: 4;
-  pointer-events: none;
 }
 #pick-hint-text { margin: 0 0 6px; font-size: 13px; line-height: 1.45; }
 #pick-hint-canvas { display: block; width: 100%; height: 88px; }
@@ -136,7 +150,6 @@ button:active { transform: scale(0.97); }
   min-height: 0;
 }
 #app.wide { --panel-w: clamp(300px, 46vw, 480px); }
-#app.picking { --panel-w: clamp(280px, 44vw, 460px); }
 #panel header {
   display: flex; align-items: center; justify-content: space-between; gap: 6px;
   padding: 6px 8px;
@@ -235,7 +248,7 @@ button:active { transform: scale(0.97); }
   #panel header { padding: 3px 8px; }
   #record .rec { font-size: 10px; }
   #record .rec b { font-size: 11px; }
-  #pick-hint { top: 40px; padding: 6px 8px; }
+  #pick-hint { padding: 6px 8px; }
   #pick-hint-text { font-size: 12px; }
   #pick-hint-canvas { height: 74px; }
   .tut { padding: 6px 10px; }

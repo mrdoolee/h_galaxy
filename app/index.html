@@ -22,10 +22,6 @@
       <div id="reticle" hidden></div>
       <p id="hint"></p>
       <p id="status" hidden></p>
-      <div id="pick-hint" hidden>
-        <p id="pick-hint-text"></p>
-        <canvas id="pick-hint-canvas"></canvas>
-      </div>
       <div id="actions">
         <button id="aim-btn" class="primary" hidden></button>
         <button id="phase-btn" class="primary" hidden></button>
@@ -71,6 +67,18 @@
       <p class="question" data-text="question"></p>
       <p class="note" data-text="introNote"></p>
       <button id="start-btn" class="primary big" data-text="start"></button>
+    </div>
+  </div>
+
+  <!-- 별을 다 세면 지도가 화면 가운데로 크게 나와 깊이를 찍는다 -->
+  <div id="pick-overlay" hidden>
+    <p id="pick-banner"></p>
+    <div class="pick-body">
+      <div id="pick-slot"></div>
+      <div id="pick-hint">
+        <p id="pick-hint-text"></p>
+        <canvas id="pick-hint-canvas"></canvas>
+      </div>
     </div>
   </div>
 

@@ -1,7 +1,7 @@
 // 관측 전 튜토리얼: 허셜의 규칙·가정과 '별 수 ↔ 깊이' 관계를 미션 4개로 직접 해 보며 익힌다(약 5분).
 import { TEXT } from './config.js';
 import { mulberry32 } from './rng.js';
-import { coneStars, countWithin } from './tutorial-math.js';
+import { coneStars, countWithin, makeCloud, edgeDist, beamHits } from './tutorial-math.js';
 import { drawCubeStack, fitCubeSize } from './cubes.js';
 
 const $ = id => document.getElementById(id);
@@ -65,85 +65,153 @@ function waitNext(label = T().next, enabled = true) {
 }
 const pause = ms => new Promise(r => setTimeout(r, ms));
 
-// ---------- 미션 1: 숲 들여다보기 ----------
-function makeForest(seed) {
-  const rand = mulberry32(seed);
-  const trees = [];
-  for (let i = -9; i <= 9; i++) for (let j = 0; j <= 9; j++) {
-    trees.push({ x: j + (rand() - 0.5) * 0.6 + 0.5, y: i * 0.9 + (rand() - 0.5) * 0.5 });
+// ---------- 미션 1: 깊이란? 빛을 쏘아 별 세기 → 거꾸로 추리하기 ----------
+const BEAM_HALF = 10 * Math.PI / 180;
+
+/** 위에서 본 별 구름. view: {cloud, rx, ry, arrows:[a], beams:[{a, L, hits:Set}], cover, labels:[{a, text}]} */
+function drawCloud(g, w, h, v) {
+  const sc = Math.min((w - 40) / (2 * v.rx + 0.6), (h - 30) / (2 * v.ry + 0.6));
+  const cx = w / 2, cy = h / 2;
+  const P = (x, y) => [cx + x * sc, cy - y * sc];
+  if (!v.cover) {
+    g.fillStyle = 'rgba(95,212,255,0.07)'; g.strokeStyle = 'rgba(95,212,255,0.55)'; g.setLineDash([5, 4]);
+    g.beginPath(); g.ellipse(cx, cy, v.rx * sc, v.ry * sc, 0, 0, Math.PI * 2); g.fill(); g.stroke(); g.setLineDash([]);
+    g.fillStyle = 'rgba(232,236,246,0.75)';
+    for (const st of v.cloud) { const [x, y] = P(st.x, st.y); g.beginPath(); g.arc(x, y, 1.8, 0, Math.PI * 2); g.fill(); }
   }
-  return trees;
-}
-const inWedge = (t, depth, halfDeg) => t.x > 0 && t.x <= depth && Math.abs(Math.atan2(t.y, t.x)) <= halfDeg * Math.PI / 180;
-
-function drawTree(g, x, y, s, alpha = 1) {
-  g.globalAlpha = alpha;
-  g.fillStyle = '#5b3a1e'; g.fillRect(x - s * 0.12, y, s * 0.24, s * 0.5);
-  g.fillStyle = '#4fae5c';
-  g.beginPath(); g.moveTo(x, y - s); g.lineTo(x + s * 0.5, y + s * 0.1); g.lineTo(x - s * 0.5, y + s * 0.1); g.closePath(); g.fill();
-  g.globalAlpha = 1;
-}
-
-/** 위에서 본 숲 하나: 관측자 (x0, yc), 슬롯 높이 hs, 숲 깊이 depth, 창문 반각 half */
-const BAND = 3.2; // 숲의 세로 폭(나무 단위, ±)
-function drawForestTop(g, x0, yc, w, hs, trees, depth, half, label) {
-  const sc = Math.min(w / 10.8, hs / (2 * BAND + 1.6));
-  g.fillStyle = 'rgba(79,174,92,0.10)';
-  g.fillRect(x0, yc - BAND * sc, depth * sc, 2 * BAND * sc);
-  for (const t of trees) {
-    if (t.x > depth || Math.abs(t.y) > BAND) continue;
-    drawTree(g, x0 + t.x * sc, yc + t.y * sc, sc * 0.5, inWedge(t, depth, half) ? 1 : 0.3);
+  for (const b of v.beams || []) {
+    const [x1, y1] = P(Math.cos(b.a - BEAM_HALF) * b.L, Math.sin(b.a - BEAM_HALF) * b.L);
+    const [x2, y2] = P(Math.cos(b.a + BEAM_HALF) * b.L, Math.sin(b.a + BEAM_HALF) * b.L);
+    g.fillStyle = 'rgba(255,211,77,0.20)';
+    g.beginPath(); g.moveTo(cx, cy); g.lineTo(x1, y1); g.lineTo(x2, y2); g.closePath(); g.fill();
+    g.fillStyle = '#ffd34d';
+    for (const i of b.hits) { const [x, y] = P(v.cloud[i].x, v.cloud[i].y); g.beginPath(); g.arc(x, y, 3.6, 0, Math.PI * 2); g.fill(); }
   }
-  const a = half * Math.PI / 180, L = Math.min(10, BAND / Math.tan(a)) * sc;
-  g.fillStyle = 'rgba(255,211,77,0.13)'; g.strokeStyle = 'rgba(255,211,77,0.6)';
-  g.beginPath(); g.moveTo(x0, yc); g.lineTo(x0 + L, yc - L * Math.tan(a)); g.lineTo(x0 + L, yc + L * Math.tan(a)); g.closePath();
-  g.fill(); g.stroke();
-  g.fillStyle = '#e8c9a6'; g.beginPath(); g.arc(x0, yc, sc * 0.3, 0, Math.PI * 2); g.fill();
-  g.fillStyle = '#cfd8ff'; g.font = '13px sans-serif'; g.textBaseline = 'middle';
-  g.fillText(label, x0 + depth * sc + 10, yc);
+  if (v.cover) {
+    g.fillStyle = '#121a30'; g.strokeStyle = '#33456f';
+    g.beginPath(); g.roundRect(14, 10, w - 28, h - 20, 10); g.fill(); g.stroke();
+    for (const b of v.beams || []) {
+      const [x1, y1] = P(Math.cos(b.a - BEAM_HALF) * 1.4, Math.sin(b.a - BEAM_HALF) * 1.4);
+      const [x2, y2] = P(Math.cos(b.a + BEAM_HALF) * 1.4, Math.sin(b.a + BEAM_HALF) * 1.4);
+      g.fillStyle = 'rgba(255,211,77,0.35)';
+      g.beginPath(); g.moveTo(cx, cy); g.lineTo(x1, y1); g.lineTo(x2, y2); g.closePath(); g.fill();
+    }
+    g.fillStyle = '#94a0bd'; g.font = '14px sans-serif'; g.textAlign = 'center';
+    g.fillText(T().coverNote, cx, 34); g.textAlign = 'start';
+  }
+  for (const a of v.arrows || []) {
+    const L = edgeDist(v.rx, v.ry, a);
+    const [x, y] = P(Math.cos(a) * L, Math.sin(a) * L);
+    g.strokeStyle = '#ffb347'; g.fillStyle = '#ffb347'; g.lineWidth = 3;
+    g.beginPath(); g.moveTo(cx, cy); g.lineTo(x, y); g.stroke();
+    const ang = Math.atan2(y - cy, x - cx);
+    g.beginPath(); g.moveTo(x, y);
+    g.lineTo(x - 11 * Math.cos(ang - 0.4), y - 11 * Math.sin(ang - 0.4));
+    g.lineTo(x - 11 * Math.cos(ang + 0.4), y - 11 * Math.sin(ang + 0.4)); g.closePath(); g.fill();
+  }
+  g.font = 'bold 15px sans-serif'; g.textBaseline = 'middle';
+  for (const l of v.labels || []) {
+    const L = edgeDist(v.rx, v.ry, l.a) * (l.at ?? 0.55);
+    const [x, y] = P(Math.cos(l.a) * L, Math.sin(l.a) * L);
+    const tw = g.measureText(l.text).width;
+    const left = Math.cos(l.a) < -0.3; // 왼쪽을 향하는 화살표는 이름표도 왼쪽에
+    const bx = left ? x - tw - 18 : x + 8;
+    g.fillStyle = 'rgba(7,11,28,0.85)'; g.fillRect(bx, y - 11, tw + 10, 22);
+    g.fillStyle = l.color || '#ffb347'; g.fillText(l.text, bx + 5, y);
+  }
+  g.fillStyle = '#ffd34d'; g.beginPath(); g.arc(cx, cy, 6, 0, Math.PI * 2); g.fill();
+  g.textBaseline = 'alphabetic';
 }
 
-/** 창문으로 본 모습: 보이는 나무 n그루 */
-function drawWindowView(g, x, y, w, h, n, seed, label) {
-  g.fillStyle = '#0b1a12'; g.strokeStyle = '#ffd34d'; g.lineWidth = 2;
-  g.fillRect(x, y, w, h); g.strokeRect(x, y, w, h);
-  const rand = mulberry32(seed);
-  for (let i = 0; i < n; i++) drawTree(g, x + 12 + rand() * (w - 24), y + 22 + rand() * (h - 36), 14);
-  g.fillStyle = '#ffd34d'; g.font = 'bold 14px sans-serif'; g.textBaseline = 'top';
-  g.fillText(label, x, y + h + 6);
+/** 빛이 a 방향으로 나아가며 별을 만날 때마다 +1. 은하 끝에서 멈춘다. */
+function shootBeam(view, a, ms = 1800) {
+  const L = edgeDist(view.rx, view.ry, a);
+  const order = beamHits(view.cloud, a, L, BEAM_HALF);
+  const beam = { a, L: 0, hits: new Set() };
+  view.beams = [...(view.beams || []), beam];
+  return new Promise(resolve => {
+    const t0 = performance.now();
+    const frame = now => {
+      const k = Math.min(1, (now - t0) / ms);
+      beam.L = L * k;
+      for (const i of order) if (Math.hypot(view.cloud[i].x, view.cloud[i].y) <= beam.L) beam.hits.add(i);
+      redraw();
+      if (k < 1) requestAnimationFrame(frame); else resolve(beam.hits.size);
+    };
+    requestAnimationFrame(frame);
+  });
 }
 
-async function missionForest() {
+async function missionDepth() {
   header(1, T().m1Title);
-  const trees = makeForest(11);
-  const shallow = 3, deep = 8, half = 18;
-  const nShallow = trees.filter(t => inWedge(t, shallow, half)).length;
-  const nDeep = trees.filter(t => inWedge(t, deep, half)).length;
-
-  draw = ({ g, w, h }) => {
-    const ww = Math.min(w * 0.4, h * 0.75), wh = ww * 0.75;
-    drawWindowView(g, w * 0.05, 10, ww, wh, nShallow, 1, T().forestA(nShallow));
-    drawWindowView(g, w * 0.55, 10, ww, wh, nDeep, 2, T().forestB(nDeep));
-  };
+  const RIGHT = 0, UP = Math.PI / 2;
+  const view = { cloud: makeCloud(3, 5, 2), rx: 5, ry: 2, arrows: [], labels: [] };
+  draw = ({ g, w, h }) => drawCloud(g, w, h, view);
   redraw();
-  say(T().m1Ask);
-  const pick = await choose([T().forestA(nShallow), T().forestB(nDeep), T().unknown]);
 
-  draw = ({ g, w, h }) => {
-    drawForestTop(g, 16, h * 0.25, w - 32, h * 0.5, trees, shallow, half, T().forestTopA);
-    drawForestTop(g, 16, h * 0.75, w - 32, h * 0.5, trees, deep, half, T().forestTopB);
-  };
-  redraw();
-  say((pick === 1 ? T().right : T().notQuite) + ' ' + T().m1Reveal);
+  // ① 깊이란? 두 방향을 눌러 은하 끝까지의 거리를 본다
+  say(T().m1Intro);
+  const seen = new Set();
+  while (seen.size < 2) {
+    const i = await choose([T().dirRight, T().dirUp].map((t, k) => (seen.has(k) ? '✓ ' : '') + t));
+    if (seen.has(i)) continue;
+    seen.add(i);
+    const a = i === 0 ? RIGHT : UP;
+    view.arrows.push(a);
+    view.labels.push({ a, text: T().depthLabel(Math.round(edgeDist(5, 2, a))), at: 0.5 });
+    redraw();
+  }
+  say(T().m1Defined);
   await waitNext();
 
-  // 창문 크기가 다르면?
+  // ② 빛을 쏘아 별 세기: 먼저 예상
+  view.arrows = []; view.labels = [];
+  redraw();
+  say(T().m1BeamAsk);
+  const guess = await choose([T().dirRight, T().dirUp, T().same]);
+  clearButtons();
+  say(T().m1Beaming);
+  const nRight = await shootBeam(view, RIGHT);
+  view.labels.push({ a: RIGHT, text: T().beamCount(nRight), at: 0.75 });
+  redraw();
+  await pause(300);
+  const nUp = await shootBeam(view, UP, 1000);
+  view.labels.push({ a: UP, text: T().beamCount(nUp), at: 0.75 });
+  redraw();
+  say((guess === 0 ? T().right : T().notQuite) + ' ' + T().m1BeamResult(nRight, nUp), T().m1Rules);
+  await waitNext();
+
+  // ③ 은하 끝을 가리고 거꾸로 추리하기
+  const hidden = { cloud: makeCloud(8, 2, 4.5), rx: 2, ry: 4.5, cover: true, labels: [] };
+  const A = Math.PI, B = Math.PI / 2;
+  const nA = beamHits(hidden.cloud, A, edgeDist(2, 4.5, A), BEAM_HALF).length;
+  const nB = beamHits(hidden.cloud, B, edgeDist(2, 4.5, B), BEAM_HALF).length;
+  hidden.beams = [{ a: A, L: 0, hits: new Set() }, { a: B, L: 0, hits: new Set() }];
   draw = ({ g, w, h }) => {
-    drawForestTop(g, 16, h * 0.25, w - 32, h * 0.5, trees, deep, 8, T().smallWindow);
-    drawForestTop(g, 16, h * 0.75, w - 32, h * 0.5, trees, deep, 30, T().bigWindow);
+    drawCloud(g, w, h, hidden);
+    if (hidden.cover) {
+      g.font = 'bold 15px sans-serif'; g.fillStyle = '#ffb347'; g.textAlign = 'center';
+      g.fillText(T().sideA(nA), w * 0.22, h / 2 + 30);
+      g.fillText(T().sideB(nB), w / 2, h * 0.2 + 26);
+      g.textAlign = 'start';
+    }
   };
   redraw();
-  say(T().m1Window, T().m1Rules);
+  say(T().m1ReverseAsk);
+  let pick;
+  do {
+    pick = await choose([T().sideA(nA), T().sideB(nB), T().unknown]);
+    if (pick !== 1) say(T().m1ReverseHint);
+  } while (pick !== 1);
+  hidden.cover = false;
+  hidden.beams = [];
+  hidden.arrows = [A, B];
+  hidden.labels = [
+    { a: A, text: T().depthLabel(Math.round(edgeDist(2, 4.5, A))), at: 0.5 },
+    { a: B, text: T().depthLabel(Math.round(edgeDist(2, 4.5, B) * 10) / 10), at: 0.5 },
+  ];
+  redraw();
+  say(T().m1ReverseReveal, T().m1ReverseNote);
   await waitNext();
 }
 
@@ -186,12 +254,20 @@ async function missionCone() {
     g.fillStyle = 'rgba(255,179,71,0.12)'; g.strokeStyle = 'rgba(255,179,71,0.6)'; g.lineWidth = 1.5;
     g.beginPath(); g.moveTo(x0, y0); g.lineTo(x0 + L, y0 - L * Math.tan(visualHalf)); g.lineTo(x0 + L, y0 + L * Math.tan(visualHalf)); g.closePath();
     g.fill(); g.stroke();
-    // 시야 속 별(은하 끝 안쪽만)
-    g.fillStyle = '#fff6dc';
+    // 시야의 단면: 깊이 1, 2, 3에서 원(비스듬히 보면 타원). 멀수록 위아래·앞뒤로 모두 넓어진다
+    const tan = Math.tan(visualHalf);
+    g.setLineDash([4, 4]); g.strokeStyle = 'rgba(255,179,71,0.55)'; g.lineWidth = 1.2;
+    for (let k = 1; k <= 3; k++) {
+      if (k > edge + 1e-9) break;
+      g.beginPath(); g.ellipse(x0 + k * scale, y0, k * scale * tan * 0.35, k * scale * tan, 0, 0, Math.PI * 2); g.stroke();
+    }
+    g.setLineDash([]);
+    // 시야 속 별(은하 끝 안쪽만). 앞뒤(t)로 퍼진 만큼 조금 비스듬히 그린다
     for (const s of stars) {
       if (s.r > edge) continue;
-      const x = x0 + s.r * scale, y = y0 + s.s * s.r * scale * Math.tan(visualHalf);
-      g.beginPath(); g.arc(x, y, 2.6, 0, Math.PI * 2); g.fill();
+      const x = x0 + s.r * scale + s.t * s.r * scale * tan * 0.35, y = y0 + s.s * s.r * scale * tan;
+      g.fillStyle = s.t > 0 ? '#fff6dc' : 'rgba(255,246,220,0.6)';
+      g.beginPath(); g.arc(x, y, s.t > 0 ? 2.8 : 2.2, 0, Math.PI * 2); g.fill();
     }
     // 은하 끝(끌기 손잡이)
     g.fillStyle = '#5fd4ff';
@@ -313,7 +389,7 @@ export async function runTutorial() {
   try {
     await Promise.race([
       (async () => {
-        await missionForest();
+        await missionDepth();
         await missionCone();
         await missionCubes();
         await missionPractice();

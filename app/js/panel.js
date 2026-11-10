@@ -32,11 +32,16 @@ export function createPanel({ onSelectDirection }) {
   let geo = null;  // 마지막으로 그린 지도의 { C, unit, dpr }
 
   const mapBox = $('map-box');
-  new ResizeObserver(() => drawMap()).observe(mapBox);
+  const ro = new ResizeObserver(() => drawMap());
+  ro.observe(mapBox);
+  ro.observe($('pick-slot'));
+  let pulseRaf = 0;
+  const pulse = now => { drawMap(now); pulseRaf = requestAnimationFrame(pulse); };
 
-  function drawMap() {
-    // 지도는 늘 정사각형: 상자에 들어가는 가장 큰 정사각형
-    const css = Math.floor(Math.min(mapBox.clientWidth, mapBox.clientHeight));
+  function drawMap(now = performance.now()) {
+    // 지도는 늘 정사각형: 지금 들어 있는 상자(패널 또는 가운데 큰 자리)에 맞는 가장 큰 정사각형
+    const box = mapCanvas.parentElement;
+    const css = Math.floor(Math.min(box.clientWidth, box.clientHeight));
     if (!css) return;
     mapCanvas.style.width = mapCanvas.style.height = `${css}px`;
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -67,7 +72,7 @@ export function createPanel({ onSelectDirection }) {
     g.beginPath(); g.moveTo(C - 5 * unit, C); g.lineTo(C + 5 * unit, C); g.stroke();
 
     // 망원경이 지금 보는 방향
-    if (heading !== null && !pick) {
+    if (heading !== null && !pick && mapCanvas.parentElement === mapBox) {
       const [x, y] = at(heading, 5);
       g.strokeStyle = 'rgba(123,227,138,0.85)'; g.lineWidth = 2 * dpr;
       g.setLineDash([5 * dpr, 4 * dpr]);
@@ -81,15 +86,17 @@ export function createPanel({ onSelectDirection }) {
       g.strokeStyle = 'rgba(255,211,77,0.9)'; g.lineWidth = 6 * dpr; g.lineCap = 'round';
       g.beginPath(); g.moveTo(C, C); g.lineTo(x, y); g.stroke();
       g.lineCap = 'butt';
+      const base = Math.max(7 * dpr, unit * 0.36);
+      const rr = base * (1 + 0.12 * Math.sin(now / 160)); // 깜빡이며 '눌러요' 신호
       for (let k = 1; k <= 5; k++) {
         const [cx, cy] = at(pick.phi, k);
         const wrong = pick.wrong.has(k);
         g.fillStyle = wrong ? '#3a1820' : '#0e1424';
         g.strokeStyle = wrong ? '#ff6b6b' : '#ffd34d';
         g.lineWidth = 2 * dpr;
-        g.beginPath(); g.arc(cx, cy, 7 * dpr, 0, Math.PI * 2); g.fill(); g.stroke();
+        g.beginPath(); g.arc(cx, cy, wrong ? base : rr, 0, Math.PI * 2); g.fill(); g.stroke();
         g.fillStyle = wrong ? '#ff6b6b' : '#ffd34d';
-        g.font = `bold ${9 * dpr}px sans-serif`;
+        g.font = `bold ${Math.max(9 * dpr, unit * 0.36)}px sans-serif`;
         g.fillText(String(k), cx, cy + 0.5 * dpr);
       }
     }
@@ -127,10 +134,19 @@ export function createPanel({ onSelectDirection }) {
     if (best === null) return;
     const p = pick;
     if (best === depthFromCount(p.count)) {
+      // 큰 지도에 점이 찍힌 모습을 잠깐 보여 준 뒤, 지도가 오른쪽 자리로 돌아간다
       pick = null;
-      $('pick-hint').hidden = true;
-      document.getElementById('app').classList.remove('picking');
-      p.resolve(best);
+      cancelAnimationFrame(pulseRaf);
+      records[p.phi] = { count: p.count, depth: best };
+      drawMap();
+      setTimeout(() => {
+        const from = mapCanvas.getBoundingClientRect();
+        mapBox.appendChild(mapCanvas);
+        $('pick-overlay').hidden = true;
+        drawMap();
+        flip(mapCanvas, from);
+        p.resolve(best);
+      }, 550);
     } else {
       p.wrong.add(best);
       p.level = Math.min(2, p.level + 1);
@@ -140,8 +156,6 @@ export function createPanel({ onSelectDirection }) {
   });
 
   function renderHint() {
-    const box = $('pick-hint');
-    box.hidden = false;
     const n = Math.round(Math.cbrt(pick.count));
     $('pick-hint-text').innerHTML = TEXT.depthHint[pick.level](pick.count);
     const canvas = $('pick-hint-canvas');
@@ -153,10 +167,10 @@ export function createPanel({ onSelectDirection }) {
     g.clearRect(0, 0, w, h);
     if (pick.level === 0) {
       // 예시: 별 8개 = 2×2×2
-      const s = fitCubeSize(2, w * 0.5, h * 0.9);
-      drawCubeStack(g, 2, w * 0.27, h * 0.95, s);
+      const s = fitCubeSize(2, w * 0.4, h * 0.9);
+      drawCubeStack(g, 2, w * 0.22, h * 0.95, s);
       g.fillStyle = '#e8ecf6'; g.font = '13px sans-serif'; g.textBaseline = 'middle';
-      g.fillText(TEXT.depthHintExample, w * 0.55, h * 0.5);
+      TEXT.depthHintExample.forEach((line, i) => g.fillText(line, w * 0.48, h * 0.38 + i * 20));
     } else if (pick.level === 1) {
       // 한 층(n×n)을 위에서 본 격자
       const s = Math.min((h - 8) / n, 18);
@@ -237,9 +251,14 @@ export function createPanel({ onSelectDirection }) {
     pickDepth(phi, count) {
       return new Promise(resolve => {
         pick = { phi, count, wrong: new Set(), level: 0, resolve };
-        document.getElementById('app').classList.add('picking');
-        renderHint();
+        const from = mapCanvas.getBoundingClientRect();
+        $('pick-banner').textContent = TEXT.pickBanner(phi);
+        $('pick-overlay').hidden = false;
+        $('pick-slot').appendChild(mapCanvas);
         drawMap();
+        renderHint();
+        flip(mapCanvas, from);
+        pulseRaf = requestAnimationFrame(pulse);
       });
     },
     showQuiz,
@@ -282,4 +301,16 @@ function compareFigure() {
       <figcaption>${TEXT.compareToday}</figcaption>
     </figure>
   </div>`;
+}
+
+/** 요소가 from 자리(이전 위치·크기)에서 지금 자리로 날아오듯 움직이게 한다 */
+function flip(el, from) {
+  const to = el.getBoundingClientRect();
+  if (!to.width || !from.width) return;
+  el.style.transition = 'none';
+  el.style.transformOrigin = '0 0';
+  el.style.transform = `translate(${from.left - to.left}px, ${from.top - to.top}px) scale(${from.width / to.width})`;
+  void el.offsetWidth;
+  el.style.transition = 'transform 450ms cubic-bezier(.2,.8,.2,1)';
+  el.style.transform = 'none';
 }
