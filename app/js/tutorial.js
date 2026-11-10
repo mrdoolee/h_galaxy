@@ -234,8 +234,9 @@ async function missionCone() {
   const seen = new Set([1]);
   const visualHalf = 16 * Math.PI / 180;
 
+  // 왼쪽 2/3: 옆에서 본 시야, 오른쪽 1/3: 관측자가 망원경으로 보는 모습
   const geom = (w, h) => {
-    const x0 = 30, scale = (w - x0 - 30) / 3.15;
+    const x0 = 30, scale = (w * 0.66 - x0 - 16) / 3.15;
     return { x0, y0: h * 0.55, scale };
   };
   draw = ({ g, w, h }) => {
@@ -280,8 +281,33 @@ async function missionCone() {
     for (let k = 1; k <= 3; k++) g.fillText(`${k}`, x0 + k * scale - 3, 16);
     g.fillStyle = '#ffd34d'; g.beginPath(); g.arc(x0, y0, 6, 0, Math.PI * 2); g.fill();
     // 카운터
-    g.fillStyle = '#ffb347'; g.font = 'bold 18px sans-serif';
-    g.fillText(T().coneCount(Math.round(edge * 10) / 10, countWithin(stars, edge)), x0 + 6, h - 8);
+    // (아래쪽은 은하 끝 이름표와 겹치므로 왼쪽 위에 배경과 함께)
+    g.font = 'bold 17px sans-serif';
+    const label = T().coneCount(Math.round(edge * 10) / 10, countWithin(stars, edge));
+    g.fillStyle = 'rgba(7,11,28,0.85)'; g.fillRect(x0 - 4, 26, g.measureText(label).width + 12, 26);
+    g.fillStyle = '#ffb347'; g.textBaseline = 'middle'; g.fillText(label, x0 + 2, 39); g.textBaseline = 'alphabetic';
+
+    // 관측자가 망원경으로 보는 모습: 시야 단면 속 위치(t 좌우, s 위아래)에 별이 보인다. 가까운 별일수록 크고 밝게
+    const ecx = w * 0.835, ecy = h * 0.5, er = Math.min(w * 0.145, h * 0.33);
+    g.fillStyle = '#cfd8ff'; g.font = '13px sans-serif'; g.textAlign = 'center';
+    g.fillText(T().eyepieceView, ecx, ecy - er - 10);
+    g.save();
+    g.beginPath(); g.arc(ecx, ecy, er, 0, Math.PI * 2); g.clip();
+    const grad = g.createRadialGradient(ecx, ecy, 0, ecx, ecy, er);
+    grad.addColorStop(0, '#0b1230'); grad.addColorStop(1, '#03050d');
+    g.fillStyle = grad; g.fillRect(ecx - er, ecy - er, 2 * er, 2 * er);
+    for (const s of stars) {
+      if (s.r > edge) continue;
+      const near = 1 - (s.r - 0.8) / 2.4; // 1(가까움) ~ 0(멂)
+      g.fillStyle = `rgba(255,246,220,${0.55 + 0.45 * Math.max(0, near)})`;
+      g.beginPath(); g.arc(ecx + s.t * er, ecy - s.s * er, 1.6 + 2.2 * Math.max(0, near), 0, Math.PI * 2); g.fill();
+    }
+    g.restore();
+    g.strokeStyle = '#ffb347'; g.lineWidth = 2.5;
+    g.beginPath(); g.arc(ecx, ecy, er, 0, Math.PI * 2); g.stroke();
+    g.fillStyle = '#ffb347'; g.font = 'bold 15px sans-serif';
+    g.fillText(T().eyepieceCount(countWithin(stars, edge)), ecx, ecy + er + 20);
+    g.textAlign = 'start';
   };
 
   const canvas = $('tut-canvas');
