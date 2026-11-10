@@ -112,6 +112,8 @@ button:active { transform: scale(0.97); }
 #ep-title { color: var(--muted); font-size: 14px; }
 .big { font-size: clamp(20px, 3.4vw, 30px); font-weight: 800; color: var(--accent); }
 #ep-msg { font-size: 14px; line-height: 1.4; }
+#ep-auto { font-size: 18px; padding: 10px 14px; animation: glow 1s ease-in-out infinite alternate; }
+@keyframes glow { from { box-shadow: 0 0 0 0 rgba(255,159,46,0.0); } to { box-shadow: 0 0 0 6px rgba(255,159,46,0.35); } }
 
 /* ---------- 깊이 찍기: 지도가 화면 가운데로 크게 ---------- */
 #pick-overlay {

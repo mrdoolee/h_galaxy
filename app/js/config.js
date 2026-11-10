@@ -2,7 +2,7 @@
 // 문장만 바꾸고, 따옴표(')와 쉼표(,)는 지우지 마세요.
 
 // 시야의 별이 이 수보다 많으면 '자동 세기' 버튼이 나타난다.
-export const AUTO_COUNT_THRESHOLD = 30;
+export const AUTO_COUNT_THRESHOLD = 10;
 
 // 은하를 만드는 난수 시드. 같은 수면 모든 기기에서 똑같은 하늘이 나온다.
 export const GALAXY_SEED = 20261106;
