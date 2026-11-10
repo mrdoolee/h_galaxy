@@ -71,29 +71,20 @@ export function isInsideGalaxy(p) {
   return Math.hypot(p.x, p.y, p.z) <= depthAtElevation(elevationOf(p)) + 1e-12;
 }
 
-/**
- * 방향 φ를 바라보는 카메라 회전(Euler 순서 'YXZ', 라디안).
- * 90°·270°를 바라볼 때도 특이점 없이 정확하다.
- */
-export function aimEuler(phiDeg) {
-  const d = dirFromAngle(phiDeg);
-  const pitch = Math.asin(Math.max(-1, Math.min(1, d.y)));
-  const yaw = d.x >= -1e-12 ? -Math.PI / 2 : Math.PI / 2;
-  return { yaw, pitch };
+/** 두 방향 각도(°)의 차이. 0~180, 360° 감기를 고려한다. */
+export function angleDiffDeg(a, b) {
+  const d = ((a - b) % 360 + 360) % 360;
+  return d > 180 ? 360 - d : d;
 }
 
-/** aimEuler로 φ를 바라볼 때 화면 오른쪽(right)과 위쪽(up) 방향. 접안렌즈 좌표에 쓴다. */
+/**
+ * 언덕 위 관측자가 수평선 쪽 방향 φ를 볼 때의 앞·오른쪽·위 방향(은하 좌표).
+ * 은하 좌표의 +z가 관측자의 머리 위다. 접안렌즈 좌표(ox 오른쪽, oy 위)에 쓴다.
+ */
 export function fieldBasis(phiDeg) {
-  const { yaw, pitch } = aimEuler(phiDeg);
-  const forward = {
-    x: -Math.sin(yaw) * Math.cos(pitch),
-    y: Math.sin(pitch),
-    z: -Math.cos(yaw) * Math.cos(pitch),
-  };
-  const right = { x: Math.cos(yaw), y: 0, z: -Math.sin(yaw) };
-  const back = { x: -forward.x, y: -forward.y, z: -forward.z };
-  const up = cross(back, right);
-  return { forward, right, up };
+  const forward = dirFromAngle(phiDeg);
+  const up = { x: 0, y: 0, z: 1 };
+  return { forward, right: cross(forward, up), up };
 }
 
 function cross(a, b) {
@@ -166,4 +157,46 @@ export function generateGalaxy(seed) {
     out.push(p.x, p.y, p.z);
   }
   return { background: new Float32Array(out), fields };
+}
+
+/** dir 방향 시야 원뿔(반각 halfAngleDeg) 안에 보이는 별의 수. 자동 확장의 '실제 관측'에 쓴다. */
+export function countStarsInCone(galaxy, dir, halfAngleDeg = FOV_HALF_ANGLE_DEG) {
+  const l = Math.hypot(dir.x, dir.y, dir.z);
+  const cosMax = Math.cos(halfAngleDeg * DEG);
+  const inside = (x, y, z) => (x * dir.x + y * dir.y + z * dir.z) / (l * Math.hypot(x, y, z)) >= cosMax - 1e-12;
+  let n = 0;
+  const bg = galaxy.background;
+  for (let i = 0; i < bg.length; i += 3) if (inside(bg[i], bg[i + 1], bg[i + 2])) n++;
+  for (const phi of DIRECTIONS) for (const s of galaxy.fields[phi]) if (inside(s.x, s.y, s.z)) n++;
+  return n;
+}
+
+/**
+ * 자동 확장으로 관측할 하늘의 방향들(피보나치 구, 고르게 퍼짐).
+ * upper: 관측자 머리 위쪽 하늘(은하 좌표 z ≥ 0). 위쪽을 먼저, 각 절반은 관측 평면에서 가까운 순서로.
+ */
+export function sweepDirections(n = 160) {
+  const golden = Math.PI * (3 - Math.sqrt(5));
+  const out = [];
+  for (let i = 0; i < n; i++) {
+    const z = 1 - (2 * (i + 0.5)) / n;
+    const r = Math.sqrt(1 - z * z);
+    const t = golden * i;
+    out.push({ dir: { x: Math.cos(t) * r, y: Math.sin(t) * r, z }, upper: z >= 0 });
+  }
+  const off = d => Math.atan2(Math.abs(d.dir.z), Math.abs(d.dir.x));
+  return out.sort((a, b) => (b.upper - a.upper) || (off(a) - off(b)));
+}
+
+/** 측정한 (방향, 깊이)들을 은하 기준면 고도 구간별로 평균 낸 단면 모양. 표면은 측정값으로만 만든다. */
+export function profileFromSamples(samples, binDeg = 10) {
+  const bins = new Map();
+  for (const { dir, depth } of samples) {
+    const k = Math.min(Math.floor(elevationOf(dir) / binDeg), Math.ceil(90 / binDeg) - 1);
+    const b = bins.get(k) || { sum: 0, n: 0 };
+    b.sum += depth; b.n++;
+    bins.set(k, b);
+  }
+  return [...bins.entries()].sort((a, b) => a[0] - b[0])
+    .map(([k, b]) => ({ elev: (k + 0.5) * binDeg, depth: b.sum / b.n }));
 }
