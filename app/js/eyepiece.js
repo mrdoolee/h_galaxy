@@ -1,6 +1,5 @@
-// 접안렌즈 화면: 시야를 크게 확대해 별을 탭해서 세고, 환산표로 깊이를 고른다.
+// 접안렌즈 화면: 망원경 시야를 크게 확대해 별을 탭해서 센다. 깊이는 지도에서 고른다(panel.js).
 import { createCounter } from './counting.js';
-import { CONVERSION_TABLE, depthFromCount } from './model.js';
 import { AUTO_COUNT_THRESHOLD, TEXT } from './config.js';
 
 const $ = id => document.getElementById(id);
@@ -16,8 +15,8 @@ export function closeEyepiece() {
 }
 
 /**
- * 시야를 열고 학생이 별을 다 세면 센 수와 고른 깊이를 돌려준다.
- * @returns {Promise<{count:number, depth:number}>}
+ * 시야를 열고 학생이 별을 다 센 뒤 [지도에 깊이 찍기]를 누르면 센 수를 돌려준다.
+ * @returns {Promise<number>}
  */
 export function openEyepiece(phiDeg, fieldStars) {
   closeEyepiece();
@@ -25,7 +24,7 @@ export function openEyepiece(phiDeg, fieldStars) {
   const canvas = $('ep-canvas');
   const ctx = canvas.getContext('2d');
   const autoBtn = $('ep-auto');
-  const depthBox = $('ep-depth');
+  const doneBtn = $('ep-done');
   const counter = createCounter(fieldStars);
   const flashes = new Map(); // 별 index → 반짝인 시각
   const timers = new Set();
@@ -33,8 +32,7 @@ export function openEyepiece(phiDeg, fieldStars) {
   let autoRunning = false;
 
   root.hidden = false;
-  depthBox.hidden = true;
-  depthBox.innerHTML = '';
+  doneBtn.hidden = true;
   $('ep-title').textContent = `${phiDeg}°`;
   const many = fieldStars.length > AUTO_COUNT_THRESHOLD;
   $('ep-msg').textContent = many ? TEXT.hintCountAuto : TEXT.hintCountTap;
@@ -140,28 +138,19 @@ export function openEyepiece(phiDeg, fieldStars) {
 
   function finishCounting() {
     autoBtn.hidden = true;
-    const n = counter.count;
-    $('ep-msg').textContent = `${TEXT.countDone(phiDeg, n)} ${TEXT.depthAsk}`;
-    depthBox.hidden = false;
-    depthBox.innerHTML = '';
-    for (const row of CONVERSION_TABLE) {
-      const b = document.createElement('button');
-      b.textContent = TEXT.depthOption(row.count, row.depth);
-      b.addEventListener('click', () => {
-        if (row.depth === depthFromCount(n)) {
-          closeEyepiece();
-          resolveResult({ count: n, depth: row.depth });
-        } else {
-          b.classList.add('wrong');
-          $('ep-msg').textContent = `${TEXT.countDone(phiDeg, n)} ${TEXT.depthWrong}`;
-        }
-      });
-      depthBox.appendChild(b);
-    }
+    $('ep-msg').textContent = `${TEXT.countDone(phiDeg, counter.count)} ${TEXT.toMap}`;
+    doneBtn.textContent = TEXT.toMapButton;
+    doneBtn.hidden = false;
+  }
+
+  function onDone() {
+    closeEyepiece();
+    resolveResult(counter.count);
   }
 
   canvas.addEventListener('pointerdown', onTap);
   autoBtn.addEventListener('click', runAuto);
+  doneBtn.addEventListener('click', onDone);
   const ro = new ResizeObserver(layout);
   ro.observe(root);
   layout();
@@ -172,6 +161,7 @@ export function openEyepiece(phiDeg, fieldStars) {
     cancelAnimationFrame(raf);
     canvas.removeEventListener('pointerdown', onTap);
     autoBtn.removeEventListener('click', runAuto);
+    doneBtn.removeEventListener('click', onDone);
     ro.disconnect();
   };
   return result;
