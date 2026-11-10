@@ -35,14 +35,6 @@
   .tmpl { flex: 1; text-align: center; }
   .tmpl svg { width: 112mm; height: 112mm; }
   .tmpl p { font-size: 9.5pt; margin: 1mm 0; text-align: left; line-height: 1.45; }
-  ol.qs { padding-left: 0; list-style: none; margin: 0; counter-reset: q; }
-  ol.qs li { margin-bottom: 4.5mm; counter-increment: q; }
-  ol.qs .t { font-weight: 700; }
-  ol.qs .t::before { content: counter(q) ". "; }
-  .grp { font-size: 10pt; color: #b5650d; font-weight: 700; margin: 3mm 0 1mm; }
-  .lines { margin-top: 1.5mm; }
-  .lines div { border-bottom: 1px solid #999; height: 8mm; }
-  .box { border: 1px solid #999; height: 30mm; margin-top: 1.5mm; border-radius: 2mm; }
 </style>
 </head>
 <body>
@@ -80,22 +72,13 @@
     <div class="tmpl">
       <h2>② 은하의 단면 그리기</h2>
       <svg id="polar" viewBox="-252 -240 504 480" xmlns="http://www.w3.org/2000/svg"></svg>
-      <p>• 가운데 ☉가 태양(관측자)이에요. 각 방향의 선 위에 <b>깊이만큼</b> 점을 찍고, 12개의 점을 차례로 이어 보세요.</p>
+      <p>• 가운데 ☉가 태양(관측자)이에요. 시뮬레이터의 지도처럼 <b>위에서 내려다본 그림</b>이에요. 각 방향의 선 위에 <b>깊이만큼</b> 점을 찍고, 12개의 점을 차례로 이어 보세요.</p>
       <p>• 가로선(0°–180°)은 은하의 기준면, 세로선(90°–270°)은 기준면에 수직인 방향이에요.</p>
     </div>
   </div>
 </section>
 
-<section class="page">
-  <header>
-    <div>
-      <div class="sub">별을 세어 은하를 그리다</div>
-      <h1>③ 결과 해석하기</h1>
-    </div>
-    <div class="who">이름<span></span></div>
-  </header>
-  <ol class="qs" id="qs"></ol>
-</section>
+
 
 <script>
   // 관측 기록표 12줄
@@ -127,24 +110,6 @@
   el('text', { x: 0, y: -12, 'font-size': 12, 'text-anchor': 'middle', fill: '#8a5a00' }, '태양');
   el('text', { x: -4.4 * unit, y: -6, 'font-size': 11, fill: '#333' }, '은하 기준면');
 
-  // 해석 질문 (시뮬레이터 config.js와 같은 질문)
-  const questions = [
-    ['관측 결과 분석', '별이 가장 많이 관측된 방향은 어디인가?', 2],
-    ['관측 결과 분석', '별이 가장 적게 관측된 방향은 어디인가?', 2],
-    ['관측 결과 분석', '별이 많이 관측된 방향과 적게 관측된 방향에는 어떤 차이가 있는가?', 2],
-    ['과학적 추론', '별이 많이 관측된 방향으로는 은하가 어떤 형태로 이어져 있다고 생각할 수 있는가?', 2],
-    ['과학적 추론', '관측한 결과를 바탕으로 우리은하의 단면을 그려 보자. (옆에서 본 모습을 간단히)', 'box'],
-    ['과학적 추론', '우리는 은하 밖으로 나가지 않았는데 어떻게 은하의 모양을 알아낼 수 있었을까?', 3],
-    ['과학의 본성', '허셜이 추론한 은하의 모양이 실제와 다를 수 있는 이유는 무엇일까?', 3],
-  ];
-  let lastGroup = '';
-  document.getElementById('qs').innerHTML = questions.map(([g, t, n]) => {
-    const head = g !== lastGroup ? `<div class="grp">${g}</div>` : '';
-    lastGroup = g;
-    const answer = n === 'box' ? '<div class="box"></div>'
-      : `<div class="lines">${'<div></div>'.repeat(n)}</div>`;
-    return `<li>${head}<div class="t">${t}</div>${answer}</li>`;
-  }).join('');
 </script>
 </body>
 </html>
