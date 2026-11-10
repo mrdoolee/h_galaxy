@@ -6,7 +6,7 @@
 
 ## 실행과 검증
 
-- 서버: `python -m http.server 8321` → `http://localhost:8321/app/index.html` (`.claude/launch.json`의 `herschel-app`)
+- 서버: `python -m http.server 8321 --directory app` → `http://localhost:8321/index.html` (`.claude/launch.json`의 `herschel-app`). 프로젝트 루트를 통째로 서비스하지 않는다 — `.env`(API 키)가 같은 네트워크에 노출된다.
 - 주소 끝에 `?fast`를 붙이면 카메라 이동 애니메이션을 건너뛴다. 콘솔의 `window.__herschel`로 단계 상태를 볼 수 있다.
 - 테스트: `npm test` (= `node --test "tests/*.test.mjs"`). 순수 로직(`model.js`, `counting.js`)을 바꾸면 테스트부터 고친다.
 - 화면 확인 크기: 844×390(폰 가로), 1024×768(태블릿). 세로 화면에서는 회전 안내 오버레이가 떠야 한다.
@@ -34,5 +34,6 @@
 
 - 원격: `github.com/mrdoolee/h_galaxy` (공개, `main`).
 - `reference/`(가이드 PDF, 교과서 스캔)는 저작권 때문에 커밋하지 않는다(`.gitignore`).
+- `.env`(OpenAI API 키)는 커밋하지 않는다(`.gitignore`). 키 값을 코드·문서·로그에 쓰지 않는다.
 - GitHub Pages 공개와 QR코드 제작은 선생님 확인 뒤에만 한다.
 - 활동지 PDF는 Edge 헤드리스로 만든다: `msedge --headless --print-to-pdf=worksheet/worksheet.pdf worksheet/worksheet.html`.

@@ -20,10 +20,10 @@
 정적 서버로 폴더를 엽니다.
 
 ```bash
-python -m http.server 8321
+python -m http.server 8321 --directory app
 ```
 
-브라우저에서 `http://localhost:8321/app/index.html`을 엽니다.
+브라우저에서 `http://localhost:8321/index.html`을 엽니다. (`app/` 폴더만 서비스해야 `.env` 같은 파일이 노출되지 않습니다.)
 
 ## 테스트
 

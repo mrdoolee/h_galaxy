@@ -2,3 +2,6 @@
 reference/
 node_modules/
 .superpowers/
+
+# API 키 등 비밀 값
+.env

@@ -4,9 +4,9 @@
     {
       "name": "herschel-app",
       "runtimeExecutable": "python",
-      "runtimeArgs": ["-m", "http.server", "8321"],
+      "runtimeArgs": ["-m", "http.server", "8321", "--directory", "app"],
       "port": 8321,
-      "url": "http://localhost:8321/app/index.html"
+      "url": "http://localhost:8321/index.html"
     }
   ]
 }
