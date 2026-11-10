@@ -354,14 +354,16 @@ async function missionCone() {
     const { x0, scale } = geom(r.width, r.height);
     return Math.max(1, Math.min(3, (e.clientX - r.left - x0) / scale));
   };
-  const down = e => { dragging = true; canvas.setPointerCapture(e.pointerId); edge = toEdge(e); redraw(); };
-  const move = e => { if (dragging) { edge = toEdge(e); redraw(); } };
+  // 끌면서 지나간 깊이도 본 것으로 친다(1 → 3으로 한 번에 끌어도 2를 거쳐 감)
+  const markPassed = () => { for (let k = 1; k <= 3; k++) if (edge >= k - 0.05) seen.add(k); };
+  const down = e => { dragging = true; canvas.setPointerCapture(e.pointerId); edge = toEdge(e); markPassed(); redraw(); };
+  const move = e => { if (dragging) { edge = toEdge(e); markPassed(); redraw(); } };
   const next = waitNext(T().next, false);
   const up = () => {
     if (!dragging) return;
     dragging = false;
     edge = Math.round(edge);
-    seen.add(edge);
+    markPassed();
     redraw();
     if (seen.has(2) && seen.has(3)) {
       say(T().m2Result(['2배', '4배', '8배'][guess], guess === 2), T().m2Rule);
