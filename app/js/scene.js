@@ -5,8 +5,9 @@
 // 그러면 12방향은 관측자의 수평선 위(φ → (cosφ, 0, −sinφ))에 놓이고,
 // 은하 원반은 0°–180°를 품은 세로 면이 되어 은하수가 머리 위를 지나는 아치로 보인다.
 //
-// 관측 화면의 하늘은 원점 카메라로 그린다(별·은하수 빛·라벨·땅 덮개).
+// 관측 화면의 하늘은 원점 카메라로 그린다(별·은하수 빛·라벨).
 // 하늘 바탕색(그러데이션)은 CSS(#view.observing), 언덕과 사람은 카메라와 함께 도는 그림(#ground, #observer)이다.
+// 수평선 아래 별은 CSS 마스크(#view.observing #c)로 흐리게 지워, 지평선 쪽 하늘색이 그대로 보이게 한다.
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { DIRECTIONS, FOV_HALF_ANGLE_DEG, dirFromAngle, angleDiffDeg } from './model.js';
@@ -14,7 +15,6 @@ import { DIRECTIONS, FOV_HALF_ANGLE_DEG, dirFromAngle, angleDiffDeg } from './mo
 const DEG = Math.PI / 180;
 const CAMERA_FOV = 60;
 const SKY_PITCH = -4 * DEG;    // 수평선을 화면 가운데보다 조금 위에: 아래쪽에 관측자 그림이 들어갈 자리
-const GROUND_ELEV_DEG = -12;   // 이보다 낮은 하늘은 땅에 가린다(시야 원 반각 10°보다 아래)
 const LABEL_RADIUS = 1.4;
 const COLOR_STUDENT = 0xffb347;
 const COLOR_AUTO = 0x5fd4ff;
@@ -143,14 +143,6 @@ export function createScene(canvas, galaxy) {
     sunHelpers.add(s);
   }
   galaxyGroup.add(sunHelpers);
-
-  // 땅 덮개: 세계 고도 GROUND_ELEV_DEG 아래의 하늘을 가린다(관측자 시점만)
-  const ground = new THREE.Mesh(
-    new THREE.SphereGeometry(0.5, 48, 12, 0, Math.PI * 2, (90 - GROUND_ELEV_DEG) * DEG, (90 + GROUND_ELEV_DEG) * DEG),
-    new THREE.MeshBasicMaterial({ color: 0x0b1420, side: THREE.BackSide, depthTest: false, depthWrite: false }),
-  );
-  ground.renderOrder = 5;
-  sky.add(ground);
 
   // ---------- 바깥 시점 도우미: 태양, 깊이 원, 방향선 ----------
   const outsideHelpers = new THREE.Group();
@@ -327,7 +319,6 @@ export function createScene(canvas, galaxy) {
       mode = next;
       const observer = next === 'sun';
       sunHelpers.visible = observer;
-      ground.visible = observer;
       milkyGlow.visible = observer;
       sky.background = observer ? null : SPACE;
       outsideHelpers.visible = !observer;

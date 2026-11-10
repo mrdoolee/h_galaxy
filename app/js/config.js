@@ -7,6 +7,9 @@ export const AUTO_COUNT_THRESHOLD = 10;
 // 은하를 만드는 난수 시드. 같은 수면 모든 기기에서 똑같은 하늘이 나온다.
 export const GALAXY_SEED = 20261106;
 
+// 배경음악 파일과 크기(0 = 무음 ~ 1 = 최대).
+export const BGM = { src: './audio/bgm.mp3', volume: 0.5 };
+
 export const TEXT = {
   title: '별을 세어 은하를 그리다',
   subtitle: '허셜의 별 계수법 시뮬레이터',
@@ -89,7 +92,7 @@ export const TEXT = {
   },
 
   // ---------- 관측 ----------
-  hintObserve: '화면을 좌우로 끌어 몸을 돌려 보세요. 망원경이 목표 방향에 맞으면 [관측]을 눌러요.',
+  hintObserve: '화면을 좌우로 끌어 몸을 돌려 보세요. 망원경이 목표 방향에 맞으면 관측해 보세요.',
   aimButton: phi => `${phi}° 방향 관측하기`,
   hintCountTap: '시야 안의 별을 하나씩 눌러서 세어 보세요.',
   hintCountAuto: '별이 많아요! 직접 세거나 [자동 세기]를 눌러 보세요.',
@@ -138,6 +141,8 @@ export const TEXT = {
   compareToday: '오늘날 알려진 우리은하 (옆에서 본 모습)',
 
   restart: '처음부터',
+  bgmOn: '배경음악 끄기',
+  bgmOff: '배경음악 켜기',
   restartConfirm: '처음부터 다시 할까요? 지금까지 관측한 내용은 사라져요.',
   rotateDevice: '화면을 가로로 돌려 주세요',
 };

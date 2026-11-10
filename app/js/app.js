@@ -7,7 +7,8 @@ import { openEyepiece, closeEyepiece } from './eyepiece.js';
 import { createPanel } from './panel.js';
 import { runTutorial } from './tutorial.js';
 import { createMeteors } from './meteors.js';
-import { TEXT, GALAXY_SEED } from './config.js';
+import { createBgm } from './bgm.js';
+import { TEXT, GALAXY_SEED, BGM } from './config.js';
 
 const $ = id => document.getElementById(id);
 
@@ -38,6 +39,7 @@ function later(fn, ms) {
 const OBSERVER_TIP = { x: 0.61, y: 0.02 };   // 그림 너비·높이에 대한 비율
 const OBSERVER_ASPECT = 520 / 918;           // 너비 / 높이
 const meteors = createMeteors($('meteors'));
+const bgm = createBgm($('bgm-btn'), { ...BGM, labelOn: TEXT.bgmOn, labelOff: TEXT.bgmOff });
 
 function layoutReticle() {
   if (phase !== 'observe') return;
@@ -65,6 +67,7 @@ $('start-btn').addEventListener('click', async () => {
       ?.then(() => screen.orientation?.lock?.('landscape'))
       ?.catch(() => {});
   } catch { /* 지원 안 하는 기기 */ }
+  bgm.start();
   $('intro').hidden = true;
   phase = 'tutorial';
   await runTutorial();
@@ -95,6 +98,7 @@ function updateAim() {
   if (phase !== 'observe' || busy) return;
   const phi = scene.getAimedDirection(unmeasured());
   $('reticle').classList.toggle('on-target', phi !== null);
+  $('c').classList.toggle('tap-target', phi !== null);
   panel.setActive(phi);
   const btn = $('aim-btn');
   btn.hidden = phi === null;
@@ -112,6 +116,20 @@ async function selectDirection(phi) {
 }
 
 $('aim-btn').addEventListener('click', () => observe(Number($('aim-btn').dataset.phi)));
+
+// 초록으로 바뀐 시야 원을 눌러도 관측한다(끌기가 아닌 짧은 탭만)
+let tapStart = null;
+$('c').addEventListener('pointerdown', e => { tapStart = { x: e.clientX, y: e.clientY }; });
+$('c').addEventListener('pointerup', e => {
+  const start = tapStart;
+  tapStart = null;
+  if (!start || phase !== 'observe' || busy || $('aim-btn').hidden) return;
+  if (Math.hypot(e.clientX - start.x, e.clientY - start.y) > 8) return;
+  const rect = $('c').getBoundingClientRect();
+  const { x, y, r } = scene.fieldCircle();
+  if (Math.hypot(e.clientX - rect.left - x, e.clientY - rect.top - y) > r) return;
+  observe(Number($('aim-btn').dataset.phi));
+});
 
 async function observe(phi) {
   if (phase !== 'observe' || busy || measured.has(phi)) return;

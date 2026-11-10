@@ -282,25 +282,30 @@ function optionHtml(o, i) {
     <span><span class="num">${num}</span> ${o.label}</span>`;
 }
 
-/** 허셜의 모형과 오늘날 알려진 우리은하(옆모습) — 교과서 280쪽 수치 */
+/** 허셜의 모형과 오늘날 알려진 우리은하(옆모습) — 교과서 280쪽 수치
+ *  바탕 그림(img/q7-*.webp)에는 글자·태양이 없다. 태양 위치와 거리 표시는 아래 SVG로 정확히 얹는다.
+ *  그림 크기 600×250 → viewBox 너비 220에서 높이 약 92. 원반 중심은 (110, 46). */
 function compareFigure() {
+  const label = 'stroke="#05070f" stroke-width="3" paint-order="stroke" text-anchor="middle"';
   return `<div class="q-compare">
     <figure>
-      <svg viewBox="0 0 220 92"><ellipse cx="110" cy="45" rx="95" ry="26" fill="#ffb347" fill-opacity=".35"/>
-        <circle cx="110" cy="45" r="5" fill="#ffd34d"/><text x="110" y="76" fill="#ffd34d" font-size="15" text-anchor="middle">태양</text></svg>
+      <svg viewBox="0 0 220 112">
+        <image href="./img/q7-herschel.webp" width="220" height="92"/>
+        <circle cx="110" cy="46" r="5" fill="#ffd34d" stroke="#fff6c8" stroke-width="1"/>
+        <text x="110" y="84" fill="#ffd34d" font-size="15" ${label}>태양</text>
+      </svg>
       <figcaption>${TEXT.compareHerschel}</figcaption>
     </figure>
     <figure>
-      <svg viewBox="0 0 220 104">
-        <ellipse cx="110" cy="45" rx="100" ry="6" fill="#5fd4ff" fill-opacity=".4"/>
-        <ellipse cx="110" cy="45" rx="22" ry="14" fill="#9fe3ff" fill-opacity=".6"/>
-        <circle cx="166" cy="45" r="5" fill="#ffd34d"/>
-        <text x="166" y="30" fill="#ffd34d" font-size="14" text-anchor="middle">태양계</text>
-        <line x1="110" y1="66" x2="166" y2="66" stroke="#cfd8ff" stroke-width="1.2"/>
-        <line x1="110" y1="61" x2="110" y2="71" stroke="#cfd8ff" stroke-width="1.2"/>
-        <line x1="166" y1="61" x2="166" y2="71" stroke="#cfd8ff" stroke-width="1.2"/>
-        <text x="138" y="82" fill="#cfd8ff" font-size="13" text-anchor="middle">약 8500 pc</text>
-        <text x="110" y="99" fill="#94a0bd" font-size="13" text-anchor="middle">지름 약 30000 pc</text>
+      <svg viewBox="0 0 220 112">
+        <image href="./img/q7-today.webp" width="220" height="92"/>
+        <circle cx="172" cy="46" r="5" fill="#ffd34d" stroke="#fff6c8" stroke-width="1"/>
+        <text x="172" y="30" fill="#ffd34d" font-size="14" ${label}>태양계</text>
+        <line x1="110" y1="68" x2="172" y2="68" stroke="#cfd8ff" stroke-width="1.2"/>
+        <line x1="110" y1="63" x2="110" y2="73" stroke="#cfd8ff" stroke-width="1.2"/>
+        <line x1="172" y1="63" x2="172" y2="73" stroke="#cfd8ff" stroke-width="1.2"/>
+        <text x="141" y="86" fill="#cfd8ff" font-size="13" ${label}>약 8500 pc</text>
+        <text x="110" y="107" fill="#94a0bd" font-size="13" text-anchor="middle">지름 약 30000 pc</text>
       </svg>
       <figcaption>${TEXT.compareToday}</figcaption>
     </figure>

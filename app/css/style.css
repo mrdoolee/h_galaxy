@@ -60,6 +60,11 @@ button:active { transform: scale(0.97); }
 #view { position: relative; flex: 1; min-width: 0; overflow: hidden; background: #02030a; }
 /* 관측자 시점의 밤하늘: 위는 깊은 남색, 수평선 쪽은 보랏빛으로 은은하게 밝게 */
 #view.observing { background: linear-gradient(180deg, #050816 0%, #0b1234 38%, #1f2457 58%, #2c2a5e 66%, #121a33 82%, #0b1420 100%); }
+/* 별은 수평선 쪽에서 흐려지며 사라진다(시야 원 아래 끝 ≈ 59%, 언덕 꼭대기 ≈ 66%). 땅을 단색으로 덮으면 위 그러데이션과 색이 어긋난다 */
+#view.observing #c {
+  -webkit-mask-image: linear-gradient(180deg, #000 60%, transparent 66%);
+  mask-image: linear-gradient(180deg, #000 60%, transparent 66%);
+}
 #ground { position: absolute; left: 0; width: 100%; bottom: 0; height: 34%; object-fit: cover; object-position: center top; pointer-events: none; z-index: 1; }
 #meteors { position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 0; }
 .meteor {
@@ -86,6 +91,7 @@ button:active { transform: scale(0.97); }
   box-shadow: 0 0 0 2000px rgba(0, 0, 0, 0.25);
 }
 #reticle.on-target { border-color: var(--ok); }
+#view.observing #c.tap-target { cursor: pointer; }
 
 #hint {
   position: absolute; left: 8px; right: 8px; top: 6px; margin: 0;
@@ -109,6 +115,7 @@ button:active { transform: scale(0.97); }
   position: absolute; left: 0; right: 0; bottom: 10px;
   display: flex; justify-content: center; gap: 10px;
   pointer-events: none;
+  z-index: 3; /* 언덕(#ground)·사람(#observer) 그림보다 위 */
 }
 #actions button { pointer-events: auto; font-size: 16px; }
 
@@ -266,6 +273,8 @@ button:active { transform: scale(0.97); }
 .card .note { font-size: 14px; color: var(--muted); margin: 10px 0; }
 
 #restart-btn { white-space: nowrap; }
+#bgm-btn { margin-left: auto; padding-left: 8px; padding-right: 8px; }
+#bgm-btn.off { opacity: 0.6; }
 
 /* 낮은 가로 화면(전체 화면이 안 되는 폰 브라우저, 앱 속 브라우저 등) */
 @media (max-height: 420px) {
