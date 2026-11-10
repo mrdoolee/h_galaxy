@@ -112,9 +112,20 @@ button:active { transform: scale(0.97); }
 #ep-title { color: var(--muted); font-size: 14px; }
 .big { font-size: clamp(20px, 3.4vw, 30px); font-weight: 800; color: var(--accent); }
 #ep-msg { font-size: 14px; line-height: 1.4; }
-#ep-depth { display: flex; flex-direction: column; gap: 5px; }
-#ep-depth button { text-align: left; padding: 6px 10px; font-size: 15px; }
-#ep-depth button.wrong { border-color: #ff6b6b; background: #3a1820; }
+
+/* ---------- 깊이 힌트(관측 영역 왼쪽 위) ---------- */
+#pick-hint {
+  position: absolute; left: 8px; top: 48px;
+  width: clamp(200px, 34vw, 300px);
+  padding: 8px 10px;
+  background: rgba(14, 20, 36, 0.92);
+  border: 1px solid var(--accent);
+  border-radius: 10px;
+  z-index: 4;
+  pointer-events: none;
+}
+#pick-hint-text { margin: 0 0 6px; font-size: 13px; line-height: 1.45; }
+#pick-hint-canvas { display: block; width: 100%; height: 88px; }
 
 /* ---------- 오른쪽 패널 ---------- */
 #panel {
@@ -124,34 +135,70 @@ button:active { transform: scale(0.97); }
   display: flex; flex-direction: column;
   min-height: 0;
 }
+#app.wide { --panel-w: clamp(300px, 46vw, 480px); }
+#app.picking { --panel-w: clamp(280px, 44vw, 460px); }
 #panel header {
   display: flex; align-items: center; justify-content: space-between; gap: 6px;
   padding: 6px 8px;
 }
 #panel h1 { font-size: 14px; margin: 0; color: var(--muted); font-weight: 600; }
-#tabs { display: flex; gap: 4px; padding: 0 8px; }
-#tabs button { flex: 1; padding: 5px 4px; font-size: 14px; border-radius: 8px 8px 0 0; background: transparent; }
-#tabs button.active { background: #1a2440; border-bottom-color: #1a2440; font-weight: 700; }
-.tab { display: none; flex: 1; min-height: 0; padding: 6px 8px; overflow: auto; border-top: 1px solid var(--line); }
-.tab.active { display: flex; flex-direction: column; }
 
-#record { width: 100%; border-collapse: collapse; font-size: clamp(12px, 1.6vw, 14px); }
-#record th { color: var(--muted); font-weight: 600; padding: 2px; }
-#record td { text-align: center; padding: 1px 2px; height: calc((100dvh - 150px) / 13); max-height: 30px; border-top: 1px solid #18213a; }
-#record tbody tr { cursor: pointer; }
-#record tbody tr.active td { background: #263355; }
-#record tbody tr.done td:first-child { color: var(--accent); font-weight: 700; }
-#progress { margin: 4px 0 0; font-size: 13px; color: var(--muted); text-align: center; }
+#map-area { flex: 1; min-height: 0; display: flex; flex-direction: column; padding: 0 8px 6px; gap: 4px; }
+#map-box { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; }
+#map { display: block; touch-action: none; }
+#record { display: grid; grid-template-columns: repeat(6, 1fr); gap: 3px; }
+#record .rec {
+  padding: 2px 0; border-radius: 6px; font-size: 11px; line-height: 1.25;
+  display: flex; flex-direction: column; align-items: center; background: #141c33;
+}
+#record .rec b { font-size: 12px; }
+#record .rec span { color: var(--muted); }
+#record .rec.done b { color: var(--accent); }
+#record .rec.done span { color: var(--text); }
+#record .rec.active { border-color: var(--ok); background: #1d3a2a; }
+#progress { margin: 0; font-size: 12px; color: var(--muted); text-align: center; }
 
-#tab-map { align-items: center; justify-content: center; }
-#map { width: 100%; max-width: 100%; aspect-ratio: 1; max-height: 100%; }
+/* ---------- 해석 문제 ---------- */
+#quiz { flex: 1; min-height: 0; overflow-y: auto; padding: 4px 12px 12px; display: flex; flex-direction: column; gap: 8px; }
+.q-meta { margin: 0; color: var(--accent2); font-size: 13px; }
+.q-text { margin: 0; font-size: clamp(15px, 2vw, 18px); line-height: 1.5; font-weight: 700; }
+.q-options { display: flex; flex-direction: column; gap: 6px; }
+.q-options button { text-align: left; padding: 8px 10px; font-size: 14px; line-height: 1.4; }
+.q-options .num { color: var(--accent); font-weight: 700; }
+.q-options.shapes { display: grid; grid-template-columns: 1fr 1fr; }
+.q-options.shapes button { display: flex; flex-direction: column; align-items: center; gap: 2px; text-align: center; }
+.q-options .shape { width: 100%; max-width: 120px; height: 48px; }
+.q-options button.right { border-color: var(--ok); background: #18351f; color: var(--text); opacity: 1; }
+.q-options button.wrong { border-color: #ff6b6b; background: #3a1820; color: var(--text); opacity: 1; }
+.q-options button:disabled { opacity: 0.6; cursor: default; }
+.q-feedback { display: flex; flex-direction: column; gap: 6px; }
+.q-feedback p { margin: 0; }
+.q-mark { font-weight: 800; font-size: 16px; }
+.q-mark.ok { color: var(--ok); }
+.q-mark.no { color: #ff8a8a; }
+.q-explain { font-size: 14px; line-height: 1.5; color: var(--text); }
+.q-score { margin: 0; font-size: 22px; font-weight: 800; color: var(--accent); }
+.q-compare { display: flex; gap: 8px; }
+.q-compare figure { flex: 1; margin: 0; background: #070b1c; border-radius: 8px; padding: 4px; }
+.q-compare svg { width: 100%; height: auto; display: block; }
+.q-compare figcaption { font-size: 11px; color: var(--muted); text-align: center; }
 
-#tab-questions { gap: 8px; }
-#q-group { margin: 0; color: var(--accent2); font-size: 13px; }
-#q-num { margin: 0; color: var(--muted); font-size: 13px; }
-#q-text { margin: 0; font-size: clamp(15px, 2.2vw, 19px); line-height: 1.5; font-weight: 600; flex: 1; }
-.q-nav { display: flex; gap: 8px; }
-.q-nav button { flex: 1; }
+/* ---------- 튜토리얼 ---------- */
+.tut {
+  width: 100%; max-width: 980px; height: 100%; max-height: 640px;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 16px;
+  display: flex; flex-direction: column; padding: 8px 12px; gap: 6px;
+}
+.tut header { display: flex; align-items: center; gap: 10px; }
+#tut-step { color: var(--accent2); font-size: 13px; white-space: nowrap; }
+#tut-title { margin: 0; font-size: clamp(17px, 2.6vw, 22px); flex: 1; }
+.tut-body { flex: 1; min-height: 0; display: flex; gap: 12px; }
+#tut-canvas { flex: 1.4; min-width: 0; height: 100%; background: #070b1c; border-radius: 10px; touch-action: none; }
+.tut-side { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px; overflow-y: auto; }
+.tut-side p { margin: 0; line-height: 1.5; font-size: clamp(13px, 1.8vw, 15px); }
+#tut-note { color: var(--accent2); font-size: 13px; }
+#tut-choices { display: flex; flex-direction: column; gap: 6px; }
+#tut-choices button { text-align: left; }
 
 /* ---------- 오버레이 ---------- */
 .overlay {
@@ -181,17 +228,20 @@ button:active { transform: scale(0.97); }
 #restart-btn { white-space: nowrap; }
 
 /* 낮은 가로 화면(전체 화면이 안 되는 폰 브라우저, 앱 속 브라우저 등) */
-@media (max-height: 370px) {
+@media (max-height: 420px) {
   .ep-side { gap: 4px; }
   .big { font-size: 20px; }
   #ep-msg { font-size: 12px; line-height: 1.3; }
-  #ep-depth { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
-  #ep-depth button { padding: 4px 6px; font-size: 13px; }
   #panel header { padding: 3px 8px; }
-  #tabs button { padding: 3px 4px; font-size: 13px; }
-  #record td { height: auto; padding: 0 2px; line-height: 1.2; font-size: 12px; }
-  #record th { font-size: 12px; padding: 0 2px; }
-  #progress { margin-top: 2px; font-size: 12px; }
+  #record .rec { font-size: 10px; }
+  #record .rec b { font-size: 11px; }
+  #pick-hint { top: 40px; padding: 6px 8px; }
+  #pick-hint-text { font-size: 12px; }
+  #pick-hint-canvas { height: 74px; }
+  .tut { padding: 6px 10px; }
+  .tut-side p { font-size: 13px; line-height: 1.4; }
+  #tut-choices button, #tut-next { padding: 6px 10px; font-size: 14px; }
+  .q-options button { padding: 6px 8px; font-size: 13px; }
 }
 
 #rotate { display: none; font-size: 20px; text-align: center; }

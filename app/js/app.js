@@ -1,16 +1,17 @@
-// 단계 흐름: 도입 → 관측(12방향) → 단면 → 자동 확장 → 해석
-import { DIRECTIONS, generateGalaxy, depthAtElevation, elevationOf, starCountForDepth } from './model.js';
+// 단계 흐름: 도입 → 튜토리얼 → 언덕 관측(12방향, 지도에 깊이 찍기) → 단면 → 자동 확장 → 해석 문제
+import {
+  DIRECTIONS, generateGalaxy, countStarsInCone, sweepDirections, profileFromSamples,
+} from './model.js';
 import { createScene } from './scene.js';
 import { openEyepiece, closeEyepiece } from './eyepiece.js';
 import { createPanel } from './panel.js';
+import { runTutorial } from './tutorial.js';
 import { TEXT, GALAXY_SEED } from './config.js';
 
 const $ = id => document.getElementById(id);
 
 // data-text 속성의 문구 채우기
 document.querySelectorAll('[data-text]').forEach(el => { el.textContent = TEXT[el.dataset.text]; });
-$('intro-rules').innerHTML = TEXT.rules.map(r => `<li>${r}</li>`).join('');
-$('intro-assumptions').innerHTML = TEXT.assumptions.map(r => `<li>${r}</li>`).join('');
 
 const galaxy = generateGalaxy(GALAXY_SEED);
 const scene = createScene($('c'), galaxy);
@@ -19,7 +20,7 @@ const panel = createPanel({ onSelectDirection: selectDirection });
 if (new URLSearchParams(location.search).has('fast')) scene.setInstant(true);
 
 let phase = 'intro';
-let busy = false; // 조준·관측 중에는 다른 입력 무시
+let busy = false; // 조준·관측·깊이 찍기 중에는 다른 입력 무시
 const measured = new Set();
 const timers = new Set();
 
@@ -31,15 +32,19 @@ function later(fn, ms) {
   timers.add(id);
 }
 
-// ---------- 시야 원(레티클) ----------
+// ---------- 시야 원(레티클): 지금 겨눈 수평선 방향 ----------
 function layoutReticle() {
-  const d = scene.reticleDiameter();
-  $('reticle').style.width = $('reticle').style.height = `${d}px`;
+  if (phase !== 'observe') return;
+  const { x, y, r } = scene.fieldCircle();
+  const el = $('reticle');
+  el.style.left = `${x}px`;
+  el.style.top = `${y}px`;
+  el.style.width = el.style.height = `${2 * r}px`;
 }
 new ResizeObserver(layoutReticle).observe($('c'));
 
-// ---------- ① 도입 ----------
-$('start-btn').addEventListener('click', () => {
+// ---------- ① 도입 → ② 튜토리얼 ----------
+$('start-btn').addEventListener('click', async () => {
   // 전체 화면·가로 고정은 지원하는 기기에서만. 기다리지 않는다(응답이 없는 브라우저도 있음).
   try {
     document.documentElement.requestFullscreen?.()
@@ -47,14 +52,16 @@ $('start-btn').addEventListener('click', () => {
       ?.catch(() => {});
   } catch { /* 지원 안 하는 기기 */ }
   $('intro').hidden = true;
+  phase = 'tutorial';
+  await runTutorial();
   startObserve();
 });
 
-// ---------- ② 관측 ----------
+// ---------- ③ 관측 ----------
 function startObserve() {
   phase = 'observe';
   scene.setMode('sun');
-  scene.aimAt(0, false);
+  scene.setHeading(0, false);
   show('reticle', true);
   layoutReticle();
   hint(TEXT.hintObserve);
@@ -64,6 +71,9 @@ function startObserve() {
 function unmeasured() { return DIRECTIONS.filter(phi => !measured.has(phi)); }
 
 function updateAim() {
+  if (phase !== 'observe') return;
+  panel.setHeading(scene.getHeading());
+  layoutReticle();
   if (phase !== 'observe' || busy) return;
   const phi = scene.getAimedDirection(unmeasured());
   $('reticle').classList.toggle('on-target', phi !== null);
@@ -72,13 +82,13 @@ function updateAim() {
   btn.hidden = phi === null;
   if (phi !== null) { btn.textContent = TEXT.aimButton(phi); btn.dataset.phi = phi; }
 }
-scene.onDrag(updateAim);
+scene.onHeadingChange(updateAim);
 
 async function selectDirection(phi) {
-  if (phase !== 'observe' || busy) return;
+  if (phase !== 'observe' || busy || measured.has(phi)) return;
   busy = true;
   show('aim-btn', false);
-  await scene.aimAt(phi);
+  await scene.setHeading(phi);
   busy = false;
   updateAim();
 }
@@ -89,15 +99,18 @@ async function observe(phi) {
   if (phase !== 'observe' || busy || measured.has(phi)) return;
   busy = true;
   show('aim-btn', false);
-  await scene.aimAt(phi);
-  const { count, depth } = await openEyepiece(phi, galaxy.fields[phi]);
+  panel.setActive(phi);
+  await scene.setHeading(phi);
+  const count = await openEyepiece(phi, galaxy.fields[phi]);
+  hint(TEXT.hintPick(phi));
+  const depth = await panel.pickDepth(phi, count);
   measured.add(phi);
   panel.setRecord(phi, count, depth);
   scene.addMarker(phi, depth);
   scene.markLabelDone(phi);
   busy = false;
   if (measured.size === DIRECTIONS.length) startSection();
-  else updateAim();
+  else { hint(TEXT.hintObserve); updateAim(); }
 }
 
 // ---------- ④ 단면 ----------
@@ -105,9 +118,9 @@ async function startSection() {
   phase = 'section';
   show('reticle', false);
   panel.setActive(null);
+  panel.setHeading(null);
   scene.showSection(panel.records());
   scene.setStarsVisible(false);
-  panel.showTab('map');
   hint(TEXT.hintSection);
   await scene.setMode('outside');
   const btn = $('phase-btn');
@@ -116,44 +129,32 @@ async function startSection() {
   btn.hidden = false;
 }
 
-// ---------- ⑤ 자동 확장 ----------
-function sweepDirections(n = 120) {
-  // 피보나치 구 위의 고른 방향들을, 관측 평면(xy)에서 가까운 순서로 정렬
-  const out = [];
-  const golden = Math.PI * (3 - Math.sqrt(5));
-  for (let i = 0; i < n; i++) {
-    const y = 1 - (2 * (i + 0.5)) / n;
-    const r = Math.sqrt(1 - y * y);
-    const t = golden * i;
-    out.push({ x: Math.cos(t) * r, y, z: Math.sin(t) * r });
-  }
-  const off = d => Math.atan2(Math.abs(d.z), Math.abs(d.x));
-  return out.sort((a, b) => off(a) - off(b));
-}
-
+// ---------- ⑤ 자동 확장: 방향마다 시야 속 별을 실제로 센다 ----------
 function startExpand() {
   phase = 'expand';
   show('phase-btn', false);
-  hint(TEXT.hintExpand);
+  hint(TEXT.hintExpandUpper);
   scene.setAutoRotate(true);
   const dirs = sweepDirections();
+  const samples = [];
   let i = 0;
   const statusEl = $('status');
   statusEl.hidden = false;
 
   const addOne = () => {
-    const d = dirs[i++];
-    const depth = depthAtElevation(elevationOf(d));
-    const count = starCountForDepth(depth);
-    scene.addAutoMarker(d, depth);
-    return { count, depth };
+    const { dir, upper } = dirs[i++];
+    const count = countStarsInCone(galaxy, dir);
+    const depth = Math.cbrt(count);
+    samples.push({ dir, depth });
+    scene.addAutoMarker(dir, depth);
+    return { count, depth, upper };
   };
   const finish = () => {
     timers.forEach(clearTimeout); timers.clear();
     while (i < dirs.length) addOne();
     statusEl.hidden = true;
     show('skip-btn', false);
-    scene.buildSurface();
+    scene.buildSurface(profileFromSamples(samples));
     hint(TEXT.hintExpandDone);
     const btn = $('phase-btn');
     btn.textContent = TEXT.interpretButton;
@@ -162,7 +163,8 @@ function startExpand() {
   };
   const step = () => {
     if (i >= dirs.length) { finish(); return; }
-    const { count, depth } = addOne();
+    const { count, depth, upper } = addOne();
+    if (!upper && dirs[i - 2]?.upper) hint(TEXT.hintExpandLower);
     // 카운터가 빠르게 올라가는 모습
     let shown = 0;
     const tick = () => {
@@ -171,7 +173,7 @@ function startExpand() {
       if (shown < count) later(tick, 18);
     };
     tick();
-    later(step, 150);
+    later(step, 140);
   };
   const skip = $('skip-btn');
   skip.textContent = TEXT.skip;
@@ -188,7 +190,7 @@ function startInterpret() {
   scene.setAutoRotate(false);
   hint(TEXT.hintInterpret);
   show('toggles', true);
-  panel.showQuestions();
+  panel.showQuiz();
 }
 $('tg-stars').addEventListener('change', e => scene.setStarsVisible(e.target.checked));
 $('tg-surface').addEventListener('change', e => scene.setSurfaceVisible(e.target.checked));
@@ -203,4 +205,4 @@ $('restart-btn').addEventListener('click', () => {
 });
 
 // 개발·검증용: 콘솔에서 단계 상태 확인
-window.__herschel = { get phase() { return phase; }, measured, observe, selectDirection, galaxy };
+window.__herschel = { get phase() { return phase; }, measured, observe, selectDirection, galaxy, scene };

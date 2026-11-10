@@ -22,6 +22,10 @@
       <div id="reticle" hidden></div>
       <p id="hint"></p>
       <p id="status" hidden></p>
+      <div id="pick-hint" hidden>
+        <p id="pick-hint-text"></p>
+        <canvas id="pick-hint-canvas"></canvas>
+      </div>
       <div id="actions">
         <button id="aim-btn" class="primary" hidden></button>
         <button id="phase-btn" class="primary" hidden></button>
@@ -40,7 +44,7 @@
             <p id="ep-count" class="big"></p>
             <p id="ep-msg"></p>
             <button id="ep-auto" class="primary" hidden></button>
-            <div id="ep-depth" hidden></div>
+            <button id="ep-done" class="primary" hidden></button>
           </div>
         </div>
       </div>
@@ -51,27 +55,12 @@
         <h1 data-text="title"></h1>
         <button id="restart-btn" class="small" data-text="restart"></button>
       </header>
-      <nav id="tabs">
-        <button data-tab="record" class="active" data-text="tabRecord"></button>
-        <button data-tab="map" data-text="tabMap"></button>
-        <button data-tab="questions" data-text="tabQuestions" hidden></button>
-      </nav>
-      <div id="tab-record" class="tab active">
-        <table id="record">
-          <thead><tr><th data-text="colDirection"></th><th data-text="colCount"></th><th data-text="colDepth"></th></tr></thead>
-          <tbody></tbody>
-        </table>
+      <div id="map-area">
+        <div id="map-box"><canvas id="map"></canvas></div>
+        <div id="record"></div>
         <p id="progress"></p>
       </div>
-      <div id="tab-map" class="tab">
-        <canvas id="map"></canvas>
-      </div>
-      <div id="tab-questions" class="tab">
-        <p id="q-group"></p>
-        <p id="q-num"></p>
-        <p id="q-text"></p>
-        <div class="q-nav"><button id="q-prev"></button><button id="q-next"></button></div>
-      </div>
+      <div id="quiz" hidden></div>
     </aside>
   </main>
 
@@ -80,12 +69,27 @@
       <p class="sub" data-text="subtitle"></p>
       <h2 data-text="title"></h2>
       <p class="question" data-text="question"></p>
-      <div class="cols">
-        <div><h3 data-text="rulesTitle"></h3><ul id="intro-rules"></ul></div>
-        <div><h3 data-text="assumptionsTitle"></h3><ul id="intro-assumptions"></ul></div>
-      </div>
-      <p class="note" data-text="sunNote"></p>
+      <p class="note" data-text="introNote"></p>
       <button id="start-btn" class="primary big" data-text="start"></button>
+    </div>
+  </div>
+
+  <div id="tutorial" class="overlay" hidden>
+    <div class="tut">
+      <header>
+        <span id="tut-step"></span>
+        <h2 id="tut-title"></h2>
+        <button id="tut-skip" class="small"></button>
+      </header>
+      <div class="tut-body">
+        <canvas id="tut-canvas"></canvas>
+        <div class="tut-side">
+          <p id="tut-text"></p>
+          <div id="tut-choices"></div>
+          <p id="tut-note"></p>
+          <button id="tut-next" class="primary" hidden></button>
+        </div>
+      </div>
     </div>
   </div>
 

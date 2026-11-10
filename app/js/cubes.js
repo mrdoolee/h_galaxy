@@ -21,7 +21,7 @@ export function drawCubeStack(ctx, n, cx, baseY, s, layers = n) {
     for (let i = n - 1; i >= 0; i--) {
       for (let j = n - 1; j >= 0; j--) {
         const x = cx + (j - i) * hx;
-        const y = baseY - (i + j) * hy - z * s - hy;
+        const y = baseY - (i + j) * hy - z * s - hy - s;
         face([[x, y - hy], [x + hx, y], [x, y + hy], [x - hx, y]], TOP);
         face([[x - hx, y], [x, y + hy], [x, y + hy + s], [x - hx, y + s]], LEFT);
         face([[x + hx, y], [x, y + hy], [x, y + hy + s], [x + hx, y + s]], RIGHT);

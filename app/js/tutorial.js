@@ -84,23 +84,23 @@ function drawTree(g, x, y, s, alpha = 1) {
   g.globalAlpha = 1;
 }
 
-/** 위에서 본 숲 하나: (x0,y0) 관측자, 숲 깊이 depth, 창문 반각 half */
-function drawForestTop(g, x0, y0, w, h, trees, depth, half, label) {
-  const sc = Math.min(w / 10.5, h / 9);
+/** 위에서 본 숲 하나: 관측자 (x0, yc), 슬롯 높이 hs, 숲 깊이 depth, 창문 반각 half */
+const BAND = 3.2; // 숲의 세로 폭(나무 단위, ±)
+function drawForestTop(g, x0, yc, w, hs, trees, depth, half, label) {
+  const sc = Math.min(w / 10.8, hs / (2 * BAND + 1.6));
   g.fillStyle = 'rgba(79,174,92,0.10)';
-  g.fillRect(x0, y0 - 4.2 * sc, depth * sc, 8.4 * sc);
+  g.fillRect(x0, yc - BAND * sc, depth * sc, 2 * BAND * sc);
   for (const t of trees) {
-    if (t.x > depth || Math.abs(t.y) > 4.2) continue;
-    const seen = inWedge(t, depth, half);
-    drawTree(g, x0 + t.x * sc, y0 + t.y * sc, sc * 0.55, seen ? 1 : 0.35);
+    if (t.x > depth || Math.abs(t.y) > BAND) continue;
+    drawTree(g, x0 + t.x * sc, yc + t.y * sc, sc * 0.5, inWedge(t, depth, half) ? 1 : 0.3);
   }
-  const a = half * Math.PI / 180, L = 10 * sc;
+  const a = half * Math.PI / 180, L = Math.min(10, BAND / Math.tan(a)) * sc;
   g.fillStyle = 'rgba(255,211,77,0.13)'; g.strokeStyle = 'rgba(255,211,77,0.6)';
-  g.beginPath(); g.moveTo(x0, y0); g.lineTo(x0 + L * Math.cos(a), y0 - L * Math.sin(a)); g.lineTo(x0 + L * Math.cos(a), y0 + L * Math.sin(a)); g.closePath();
+  g.beginPath(); g.moveTo(x0, yc); g.lineTo(x0 + L, yc - L * Math.tan(a)); g.lineTo(x0 + L, yc + L * Math.tan(a)); g.closePath();
   g.fill(); g.stroke();
-  g.fillStyle = '#e8c9a6'; g.beginPath(); g.arc(x0, y0, sc * 0.3, 0, Math.PI * 2); g.fill();
-  g.fillStyle = '#cfd8ff'; g.font = '13px sans-serif'; g.textBaseline = 'top';
-  g.fillText(label, x0, y0 + 4.4 * sc);
+  g.fillStyle = '#e8c9a6'; g.beginPath(); g.arc(x0, yc, sc * 0.3, 0, Math.PI * 2); g.fill();
+  g.fillStyle = '#cfd8ff'; g.font = '13px sans-serif'; g.textBaseline = 'middle';
+  g.fillText(label, x0 + depth * sc + 10, yc);
 }
 
 /** 창문으로 본 모습: 보이는 나무 n그루 */
@@ -130,8 +130,8 @@ async function missionForest() {
   const pick = await choose([T().forestA(nShallow), T().forestB(nDeep), T().unknown]);
 
   draw = ({ g, w, h }) => {
-    drawForestTop(g, 16, h * 0.28, w - 32, h * 0.5, trees, shallow, half, T().forestTopA);
-    drawForestTop(g, 16, h * 0.72, w - 32, h * 0.5, trees, deep, half, T().forestTopB);
+    drawForestTop(g, 16, h * 0.25, w - 32, h * 0.5, trees, shallow, half, T().forestTopA);
+    drawForestTop(g, 16, h * 0.75, w - 32, h * 0.5, trees, deep, half, T().forestTopB);
   };
   redraw();
   say((pick === 1 ? T().right : T().notQuite) + ' ' + T().m1Reveal);
@@ -139,8 +139,8 @@ async function missionForest() {
 
   // 창문 크기가 다르면?
   draw = ({ g, w, h }) => {
-    drawForestTop(g, 16, h * 0.28, w - 32, h * 0.5, trees, deep, 8, T().smallWindow);
-    drawForestTop(g, 16, h * 0.72, w - 32, h * 0.5, trees, deep, 30, T().bigWindow);
+    drawForestTop(g, 16, h * 0.25, w - 32, h * 0.5, trees, deep, 8, T().smallWindow);
+    drawForestTop(g, 16, h * 0.75, w - 32, h * 0.5, trees, deep, 30, T().bigWindow);
   };
   redraw();
   say(T().m1Window, T().m1Rules);

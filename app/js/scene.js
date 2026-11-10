@@ -17,7 +17,7 @@ const GROUND_ELEV_DEG = -12;   // 이보다 낮은 하늘은 땅에 가린다(�
 const LABEL_RADIUS = 1.4;
 const COLOR_STUDENT = 0xffb347;
 const COLOR_AUTO = 0x5fd4ff;
-const OUTSIDE_POS = new THREE.Vector3(0, 13.9, 1.5); // 위에서 내려다봄: 화면 위 = 90°, 오른쪽 = 0°
+const OUTSIDE_POS = new THREE.Vector3(0, 15.8, 1.7); // 위에서 내려다봄: 화면 위 = 90°, 오른쪽 = 0°
 
 function starSprite() {
   const c = document.createElement('canvas');
@@ -32,7 +32,7 @@ function starSprite() {
   return new THREE.CanvasTexture(c);
 }
 
-function textSprite(text, color = '#cfd8ff', scale = 0.32) {
+function textSprite(text, color = '#cfd8ff', scale = 0.22) {
   const c = document.createElement('canvas');
   c.width = 128; c.height = 64;
   const g = c.getContext('2d');

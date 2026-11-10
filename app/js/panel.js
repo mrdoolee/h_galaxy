@@ -31,11 +31,14 @@ export function createPanel({ onSelectDirection }) {
   let pick = null; // { phi, count, wrong:Set<depth>, flash:{depth,t}, resolve }
   let geo = null;  // 마지막으로 그린 지도의 { C, unit, dpr }
 
-  new ResizeObserver(() => drawMap()).observe(mapCanvas);
+  const mapBox = $('map-box');
+  new ResizeObserver(() => drawMap()).observe(mapBox);
 
   function drawMap() {
-    const css = Math.floor(Math.min(mapCanvas.clientWidth, mapCanvas.clientHeight));
+    // 지도는 늘 정사각형: 상자에 들어가는 가장 큰 정사각형
+    const css = Math.floor(Math.min(mapBox.clientWidth, mapBox.clientHeight));
     if (!css) return;
+    mapCanvas.style.width = mapCanvas.style.height = `${css}px`;
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     mapCanvas.width = mapCanvas.height = Math.round(css * dpr);
     const g = mapCanvas.getContext('2d');
@@ -126,6 +129,7 @@ export function createPanel({ onSelectDirection }) {
     if (best === depthFromCount(p.count)) {
       pick = null;
       $('pick-hint').hidden = true;
+      document.getElementById('app').classList.remove('picking');
       p.resolve(best);
     } else {
       p.wrong.add(best);
@@ -160,8 +164,9 @@ export function createPanel({ onSelectDirection }) {
       g.fillStyle = '#e8ecf6'; g.font = '13px sans-serif'; g.textBaseline = 'middle';
       g.fillText(TEXT.depthHintLayer(n * n), n * s + 14, h / 2);
     } else {
+      // 두 줄로 나눠 적는다(낮은 화면에서도 다 보이게)
       g.fillStyle = '#e8ecf6'; g.font = '13px sans-serif'; g.textBaseline = 'top';
-      CONVERSION_TABLE.forEach((r, i) => g.fillText(TEXT.depthPair(r.depth, r.count), 4, 2 + i * 17));
+      CONVERSION_TABLE.forEach((r, i) => g.fillText(TEXT.depthPair(r.depth, r.count), 4 + (i % 2) * (w / 2), 2 + Math.floor(i / 2) * 20));
     }
   }
 
@@ -232,6 +237,7 @@ export function createPanel({ onSelectDirection }) {
     pickDepth(phi, count) {
       return new Promise(resolve => {
         pick = { phi, count, wrong: new Set(), level: 0, resolve };
+        document.getElementById('app').classList.add('picking');
         renderHint();
         drawMap();
       });
@@ -259,20 +265,19 @@ function optionHtml(o, i) {
 function compareFigure() {
   return `<div class="q-compare">
     <figure>
-      <svg viewBox="0 0 220 90"><ellipse cx="110" cy="45" rx="95" ry="26" fill="#ffb347" fill-opacity=".35"/>
-        <circle cx="110" cy="45" r="5" fill="#ffd34d"/><text x="110" y="72" fill="#ffd34d" font-size="11" text-anchor="middle">태양</text></svg>
+      <svg viewBox="0 0 220 92"><ellipse cx="110" cy="45" rx="95" ry="26" fill="#ffb347" fill-opacity=".35"/>
+        <circle cx="110" cy="45" r="5" fill="#ffd34d"/><text x="110" y="76" fill="#ffd34d" font-size="15" text-anchor="middle">태양</text></svg>
       <figcaption>${TEXT.compareHerschel}</figcaption>
     </figure>
     <figure>
-      <svg viewBox="0 0 220 90">
+      <svg viewBox="0 0 220 92">
         <ellipse cx="110" cy="45" rx="100" ry="6" fill="#5fd4ff" fill-opacity=".4"/>
         <ellipse cx="110" cy="45" rx="22" ry="14" fill="#9fe3ff" fill-opacity=".6"/>
-        <circle cx="166" cy="45" r="4.5" fill="#ffd34d"/>
-        <text x="166" y="32" fill="#ffd34d" font-size="10" text-anchor="middle">태양계</text>
-        <line x1="110" y1="60" x2="166" y2="60" stroke="#cfd8ff" stroke-width="1"/>
-        <text x="138" y="72" fill="#cfd8ff" font-size="9.5" text-anchor="middle">약 8500 pc</text>
-        <line x1="10" y1="80" x2="210" y2="80" stroke="#94a0bd" stroke-width="1"/>
-        <text x="110" y="89" fill="#94a0bd" font-size="9.5" text-anchor="middle">지름 약 30000 pc</text>
+        <circle cx="166" cy="45" r="5" fill="#ffd34d"/>
+        <text x="166" y="30" fill="#ffd34d" font-size="14" text-anchor="middle">태양계</text>
+        <line x1="110" y1="58" x2="166" y2="58" stroke="#cfd8ff" stroke-width="1.2"/>
+        <text x="138" y="73" fill="#cfd8ff" font-size="13" text-anchor="middle">약 8500 pc</text>
+        <text x="110" y="89" fill="#94a0bd" font-size="13" text-anchor="middle">지름 약 30000 pc</text>
       </svg>
       <figcaption>${TEXT.compareToday}</figcaption>
     </figure>
