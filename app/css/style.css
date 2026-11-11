@@ -273,8 +273,8 @@ button:active { transform: scale(0.97); }
 .card .note { font-size: 14px; color: var(--muted); margin: 10px 0; }
 
 #restart-btn { white-space: nowrap; }
-#bgm-btn { margin-left: auto; padding-left: 8px; padding-right: 8px; }
-#bgm-btn.off { opacity: 0.6; }
+#bgm-btn, #tut-bgm-btn { margin-left: auto; padding-left: 8px; padding-right: 8px; }
+#bgm-btn.off, #tut-bgm-btn.off { opacity: 0.6; }
 
 /* 낮은 가로 화면(전체 화면이 안 되는 폰 브라우저, 앱 속 브라우저 등) */
 @media (max-height: 420px) {

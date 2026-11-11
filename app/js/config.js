@@ -10,6 +10,14 @@ export const GALAXY_SEED = 20261106;
 // 배경음악 파일과 크기(0 = 무음 ~ 1 = 최대).
 export const BGM = { src: './audio/bgm.mp3', volume: 0.5 };
 
+// 튜토리얼 그림 파일. 별·빛줄기·숫자·정육면체는 코드가 이 그림 위에 정확히 그린다.
+export const TUTORIAL_IMG = {
+  bg: './img/tut-bg.webp',              // 미션 화면 공통 밤하늘 배경(점 별 없음)
+  observer: './img/tut-observer.webp',  // 옆에서 본 관측자와 망원경(미션 2 첫 장면)
+  eyepiece: './img/tut-eyepiece.webp',  // 접안렌즈 놋쇠 테두리(망원경 속 모습)
+  hilltop: './img/tut-hilltop.webp',    // 위에서 내려다본 언덕 위 관측자(마지막 장면)
+};
+
 export const TEXT = {
   title: '별을 세어 은하를 그리다',
   subtitle: '허셜의 별 계수법 시뮬레이터',

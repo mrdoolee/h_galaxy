@@ -1,5 +1,5 @@
 // 관측 전 튜토리얼: 허셜의 규칙·가정과 '별 수 ↔ 깊이' 관계를 미션 4개로 직접 해 보며 익힌다(약 5분).
-import { TEXT } from './config.js';
+import { TEXT, TUTORIAL_IMG } from './config.js';
 import { mulberry32 } from './rng.js';
 import { coneStars, countWithin, makeCloud, edgeDist, beamHits } from './tutorial-math.js';
 import { drawCubeStack, fitCubeSize } from './cubes.js';
@@ -24,6 +24,50 @@ function canvasCtx() {
   return { g, w, h };
 }
 const redraw = () => draw(canvasCtx());
+
+// ---------- 그림(AI로 그린 배경·인물) ----------
+// 그림이 늦게 와도 그 자리에서 다시 그린다. 못 불러오면 그림 없이 코드 그림만 보인다.
+const images = {};
+function preloadImages() {
+  for (const [key, src] of Object.entries(TUTORIAL_IMG)) {
+    if (images[key]) continue;
+    const img = new Image();
+    img.onload = () => { if (!$('tutorial').hidden) redraw(); };
+    img.src = src;
+    images[key] = img;
+  }
+}
+const ready = key => images[key]?.complete && images[key].naturalWidth > 0;
+
+/** 그림으로 화면을 꽉 채운다(넘치는 쪽은 자름). 그림 좌표(0~1) → 화면 좌표 함수를 돌려준다. */
+function drawCover(g, w, h, key) {
+  const img = images[key];
+  if (!ready(key)) return (u, v) => [u * w, v * h];
+  const s = Math.max(w / img.naturalWidth, h / img.naturalHeight);
+  const iw = img.naturalWidth * s, ih = img.naturalHeight * s;
+  const ox = (w - iw) / 2, oy = (h - ih) / 2;
+  g.drawImage(img, ox, oy, iw, ih);
+  return (u, v) => [ox + u * iw, oy + v * ih];
+}
+const drawBg = (g, w, h) => drawCover(g, w, h, 'bg');
+
+// 접안렌즈 테두리 그림에서 안쪽 구멍 반지름 / 바깥 반지름
+const EYEPIECE_HOLE = 0.73;
+/** 반지름 r인 시야 원 둘레에 놋쇠 테두리를 그린다. 그림이 없으면 주황 선으로 대신한다. */
+function drawEyepieceRim(g, cx, cy, r) {
+  if (ready('eyepiece')) {
+    const R = r / EYEPIECE_HOLE;
+    g.drawImage(images.eyepiece, cx - R, cy - R, 2 * R, 2 * R);
+  } else {
+    g.strokeStyle = '#ffb347'; g.lineWidth = 2.5;
+    g.beginPath(); g.arc(cx, cy, r, 0, Math.PI * 2); g.stroke();
+  }
+}
+
+// 옆에서 본 관측자 그림: 너비/높이, 망원경 앞 끝(대물렌즈)의 위치(그림 너비·높이에 대한 비율)
+const SIDE_OBSERVER = { aspect: 1.003, tipX: 0.995, tipY: 0.156 };
+// 언덕 그림에서 관측자가 서 있는 곳(그림 너비·높이에 대한 비율)
+const HILLTOP_CENTER = { u: 0.49, v: 0.53 };
 
 function header(step, title) {
   $('tut-step').textContent = T().stepOf(step, 4);
@@ -73,6 +117,7 @@ function drawCloud(g, w, h, v) {
   const sc = Math.min((w - 40) / (2 * v.rx + 0.6), (h - 30) / (2 * v.ry + 0.6));
   const cx = w / 2, cy = h / 2;
   const P = (x, y) => [cx + x * sc, cy - y * sc];
+  drawBg(g, w, h);
   if (!v.cover) {
     g.fillStyle = 'rgba(95,212,255,0.07)'; g.strokeStyle = 'rgba(95,212,255,0.55)'; g.setLineDash([5, 4]);
     g.beginPath(); g.ellipse(cx, cy, v.rx * sc, v.ry * sc, 0, 0, Math.PI * 2); g.fill(); g.stroke(); g.setLineDash([]);
@@ -218,16 +263,15 @@ async function missionDepth() {
 // ---------- 미션 2: 은하 끝 끌어 보기 ----------
 /** 망원경 시야가 뿔 모양인 까닭: 관측자 → 멀어질수록 넓어지는 시야, 거리 1·2에서의 시야 단면 */
 function drawConeIntro(g, w, h) {
-  const ex = 58, ey = h * 0.58;            // 접안렌즈(뿔의 꼭짓점)
+  drawBg(g, w, h);
+  // 관측자와 망원경 그림: 왼쪽 아래에 세우고, 망원경 앞 끝을 뿔의 꼭짓점으로 쓴다
+  const oh = Math.min(h * 0.62, w * 0.36), ow = oh * SIDE_OBSERVER.aspect;
+  const ox = 6, oy = Math.min(h - oh - 6, h * 0.5 - oh * 0.35);   // 화면이 세로로 길면 가운데쯤
+  const ex = ox + ow * SIDE_OBSERVER.tipX, ey = oy + oh * SIDE_OBSERVER.tipY;
   const L = w - ex - 24, tan = Math.tan(13 * Math.PI / 180);
-  // 사람과 망원경
-  g.fillStyle = '#e8c9a6'; g.beginPath(); g.arc(ex - 26, ey - 22, 9, 0, Math.PI * 2); g.fill();
-  g.fillStyle = '#4f6fd8'; g.beginPath(); g.roundRect(ex - 36, ey - 12, 18, 40, 6); g.fill();
-  g.fillStyle = '#f0a640'; g.save(); g.translate(ex - 4, ey); g.fillRect(-14, -5, 34, 10); g.restore();
-  g.strokeStyle = '#8a90a0'; g.lineWidth = 2;
-  g.beginPath(); g.moveTo(ex, ey + 5); g.lineTo(ex - 8, ey + 42); g.moveTo(ex, ey + 5); g.lineTo(ex + 8, ey + 42); g.stroke();
+  if (ready('observer')) g.drawImage(images.observer, ox, oy, ow, oh);
   // 시야(뿔)
-  const tip = ex + 16;
+  const tip = ex;
   g.fillStyle = 'rgba(255,211,77,0.13)'; g.strokeStyle = 'rgba(255,211,77,0.75)'; g.lineWidth = 1.5;
   g.beginPath(); g.moveTo(tip, ey); g.lineTo(tip + L, ey - L * tan); g.lineTo(tip + L, ey + L * tan); g.closePath(); g.fill(); g.stroke();
   // 거리 1, 2에서의 시야 단면(원을 비스듬히 본 모습)
@@ -242,8 +286,8 @@ function drawConeIntro(g, w, h) {
     g.fillStyle = '#cfd8ff';
     g.fillText(T().coneWidth(k), x, ey - r - 10);
   }
-  g.fillStyle = '#94a0bd';
-  g.fillText(T().coneEye, ex - 20, ey + 62);
+  g.fillStyle = '#cfd8ff';
+  g.fillText(T().coneEye, ox + ow * 0.3, oy - 6);
   g.textAlign = 'start';
 }
 
@@ -256,6 +300,7 @@ async function missionCone() {
   await waitNext();
 
   draw = ({ g, w, h }) => {
+    drawBg(g, w, h);
     g.fillStyle = '#cfd8ff'; g.font = 'bold 40px sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
     g.fillText('2배 → ?배', w / 2, h / 2);
     g.textAlign = 'start';
@@ -279,6 +324,7 @@ async function missionCone() {
   draw = ({ g, w, h }) => {
     const { x0, y0, scale } = geom(w, h);
     const ex = x0 + edge * scale;
+    drawBg(g, w, h);
     // 은하(끝까지) 영역과 고르게 퍼진 별
     g.fillStyle = 'rgba(95,212,255,0.07)';
     g.fillRect(x0, y0 - h * 0.42, ex - x0, h * 0.84);
@@ -325,9 +371,9 @@ async function missionCone() {
     g.fillStyle = '#ffb347'; g.textBaseline = 'middle'; g.fillText(label, x0 + 2, 39); g.textBaseline = 'alphabetic';
 
     // 관측자가 망원경으로 보는 모습: 시야 단면 속 위치(t 좌우, s 위아래)에 별이 보인다. 가까운 별일수록 크고 밝게
-    const ecx = w * 0.835, ecy = h * 0.5, er = Math.min(w * 0.145, h * 0.33);
+    const ecx = w * 0.835, ecy = h * 0.5, er = Math.min(w * 0.12, h * 0.27);
     g.fillStyle = '#cfd8ff'; g.font = '13px sans-serif'; g.textAlign = 'center';
-    g.fillText(T().eyepieceView, ecx, ecy - er - 10);
+    g.fillText(T().eyepieceView, ecx, ecy - er / EYEPIECE_HOLE - 6);
     g.save();
     g.beginPath(); g.arc(ecx, ecy, er, 0, Math.PI * 2); g.clip();
     const grad = g.createRadialGradient(ecx, ecy, 0, ecx, ecy, er);
@@ -340,10 +386,9 @@ async function missionCone() {
       g.beginPath(); g.arc(ecx + s.t * er, ecy - s.s * er, 1.6 + 2.2 * Math.max(0, near), 0, Math.PI * 2); g.fill();
     }
     g.restore();
-    g.strokeStyle = '#ffb347'; g.lineWidth = 2.5;
-    g.beginPath(); g.arc(ecx, ecy, er, 0, Math.PI * 2); g.stroke();
+    drawEyepieceRim(g, ecx, ecy, er);
     g.fillStyle = '#ffb347'; g.font = 'bold 15px sans-serif';
-    g.fillText(T().eyepieceCount(countWithin(stars, edge)), ecx, ecy + er + 20);
+    g.fillText(T().eyepieceCount(countWithin(stars, edge)), ecx, ecy + er / EYEPIECE_HOLE + 18);
     g.textAlign = 'start';
   };
 
@@ -390,6 +435,7 @@ async function missionCubes() {
   for (const n of [1, 2, 3]) {
     let layers = 0;
     draw = ({ g, w, h }) => {
+      drawBg(g, w, h);
       const s = fitCubeSize(3, w * 0.6, h * 0.8);
       drawCubeStack(g, n, w * 0.35, h * 0.92, s, layers);
       g.fillStyle = '#ffb347'; g.font = 'bold 22px sans-serif'; g.textBaseline = 'middle';
@@ -407,9 +453,11 @@ async function missionPractice() {
   header(4, T().m4Title);
   for (const { count, options, answer } of T().practice) {
     draw = ({ g, w, h }) => {
-      g.fillStyle = '#0b1230'; g.strokeStyle = '#ffb347'; g.lineWidth = 3;
-      const r = Math.min(w, h) * 0.42;
-      g.beginPath(); g.arc(w / 2, h / 2, r, 0, Math.PI * 2); g.fill(); g.stroke();
+      drawBg(g, w, h);
+      const r = Math.min(w, h) * 0.45 * EYEPIECE_HOLE;
+      g.fillStyle = '#060a1a';
+      g.beginPath(); g.arc(w / 2, h / 2, r, 0, Math.PI * 2); g.fill();
+      drawEyepieceRim(g, w / 2, h / 2, r);
       const rand = mulberry32(count);
       g.fillStyle = '#fff6dc';
       for (let i = 0; i < count; i++) {
@@ -424,6 +472,7 @@ async function missionPractice() {
       if (options[i] === answer) break;
       const n = answer;
       draw = ({ g, w, h }) => {
+        drawBg(g, w, h);
         const s = fitCubeSize(n, w * 0.55, h * 0.85);
         drawCubeStack(g, n, w * 0.3, h * 0.92, s);
         g.fillStyle = '#ffb347'; g.font = 'bold 20px sans-serif'; g.textBaseline = 'middle';
@@ -437,20 +486,26 @@ async function missionPractice() {
   }
   // 다음 활동 미리 보기: 언덕 위 관측자 둘레의 12방향
   draw = ({ g, w, h }) => {
-    const cx = w / 2, cy = h / 2 + 8, R = Math.min(w, h) * 0.36;
-    g.strokeStyle = 'rgba(95,212,255,0.35)'; g.lineWidth = 1;
+    const at = drawCover(g, w, h, 'hilltop');
+    let [cx, cy] = ready('hilltop') ? at(HILLTOP_CENTER.u, HILLTOP_CENTER.v) : [w / 2, h / 2 + 8];
+    const R = Math.min(w, h) * 0.36;
+    // 방향 이름(°)이 화면 밖으로 나가지 않게
+    cx = Math.min(Math.max(cx, R + 24), w - R - 24);
+    cy = Math.min(Math.max(cy, R + 30), h - R - 18);
+    g.strokeStyle = 'rgba(95,212,255,0.45)'; g.lineWidth = 1;
     g.beginPath(); g.arc(cx, cy, R, 0, Math.PI * 2); g.stroke();
     g.font = '12px sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
     for (let k = 0; k < 12; k++) {
       const a = k * Math.PI / 6;
-      g.strokeStyle = 'rgba(255,211,77,0.55)';
-      g.beginPath(); g.moveTo(cx, cy); g.lineTo(cx + Math.cos(a) * R, cy - Math.sin(a) * R); g.stroke();
-      g.fillStyle = '#cfd8ff';
+      g.strokeStyle = 'rgba(255,211,77,0.7)';
+      // 사람 그림을 가리지 않게 가운데는 비워 둔다
+      g.beginPath(); g.moveTo(cx + Math.cos(a) * R * 0.3, cy - Math.sin(a) * R * 0.3); g.lineTo(cx + Math.cos(a) * R, cy - Math.sin(a) * R); g.stroke();
+      g.fillStyle = '#e8ecf6';
       g.fillText(`${k * 30}°`, cx + Math.cos(a) * (R + 16), cy - Math.sin(a) * (R + 14));
     }
-    g.fillStyle = '#ffd34d'; g.beginPath(); g.arc(cx, cy, 6, 0, Math.PI * 2); g.fill();
+    if (!ready('hilltop')) { g.fillStyle = '#ffd34d'; g.beginPath(); g.arc(cx, cy, 6, 0, Math.PI * 2); g.fill(); }
     g.fillStyle = '#ffb347'; g.font = 'bold 15px sans-serif';
-    g.fillText(T().finalCompass, cx, 16);
+    g.fillText(T().finalCompass, w / 2, 16);
     g.textAlign = 'start'; g.textBaseline = 'alphabetic';
   };
   redraw();
@@ -461,6 +516,7 @@ async function missionPractice() {
 /** 튜토리얼을 처음부터 끝까지 진행한다. '건너뛰기'를 누르면 바로 끝난다. */
 export async function runTutorial() {
   const root = $('tutorial');
+  preloadImages();
   root.hidden = false;
   $('tut-skip').textContent = T().skip;
   const ro = new ResizeObserver(redraw);

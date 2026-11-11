@@ -39,7 +39,7 @@ function later(fn, ms) {
 const OBSERVER_TIP = { x: 0.61, y: 0.02 };   // 그림 너비·높이에 대한 비율
 const OBSERVER_ASPECT = 520 / 918;           // 너비 / 높이
 const meteors = createMeteors($('meteors'));
-const bgm = createBgm($('bgm-btn'), { ...BGM, labelOn: TEXT.bgmOn, labelOff: TEXT.bgmOff });
+const bgm = createBgm([$('bgm-btn'), $('tut-bgm-btn')], { ...BGM, labelOn: TEXT.bgmOn, labelOff: TEXT.bgmOff });
 
 function layoutReticle() {
   if (phase !== 'observe') return;
